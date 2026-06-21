@@ -1,6 +1,8 @@
 import socket
 import subprocess
 import threading
+import re
+import ipaddress
 from datetime import datetime
 
 class IPManager:
@@ -22,10 +24,27 @@ class IPManager:
         Uses Windows 'netsh' to modify network adapters programmatically.
         Requires the app to be running as Administrator.
         """
+        # --- Input validation (prevents shell/command injection) ---
+        # Adapter names are free text in Windows but should never contain shell
+        # metacharacters; allow letters, numbers, spaces, hyphens, underscores, periods.
+        if not adapter_name or not re.fullmatch(r"[\w\s\-\.]{1,64}", adapter_name):
+            return "Invalid adapter name. Only letters, numbers, spaces, '-', '_' and '.' are allowed."
+
+        for label, value in (("IP address", new_ip), ("subnet mask", subnet_mask), ("gateway", gateway)):
+            try:
+                ipaddress.ip_address(value)
+            except ValueError:
+                return f"Invalid {label}: '{value}' is not a valid IPv4/IPv6 address."
+
         try:
-            cmd = f'netsh interface ip set address name="{adapter_name}" static {new_ip} {subnet_mask} {gateway}'
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            
+            # Pass arguments as a list with shell=False so user input can never be
+            # interpreted by the shell, no matter what characters it contains.
+            cmd = [
+                "netsh", "interface", "ip", "set", "address",
+                f"name={adapter_name}", "static", new_ip, subnet_mask, gateway
+            ]
+            result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
+
             if result.returncode == 0:
                 return f"Successfully changed {adapter_name} to {new_ip}"
             else:

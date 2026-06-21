@@ -128,3 +128,17 @@
 2026-06-21 17:11:28 | INFO | Starting Flet View app...
 2026-06-21 17:11:28 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
 2026-06-21 17:11:29 | INFO | App session started
+2026-06-21 17:37:10 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 17:37:10 | INFO | Starting up TCP server on localhost:53053
+2026-06-21 17:37:10 | INFO | Flet app has started...
+2026-06-21 17:37:10 | INFO | App URL: tcp://localhost:53053
+2026-06-21 17:37:10 | INFO | Starting Flet View app...
+2026-06-21 17:37:10 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 17:37:10 | INFO | App session started
+2026-06-21 18:14:00 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 18:14:00 | INFO | Starting up TCP server on localhost:64407
+2026-06-21 18:14:00 | INFO | Flet app has started...
+2026-06-21 18:14:00 | INFO | App URL: tcp://localhost:64407
+2026-06-21 18:14:00 | INFO | Starting Flet View app...
+2026-06-21 18:14:00 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 18:14:01 | INFO | App session started

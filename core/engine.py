@@ -124,6 +124,40 @@ class ScanEngine:
         return open_ports
 
     @staticmethod
+    def local_discovery(subnet, progress_callback=None, timeout=2):
+        """Performs an ARP sweep across the given subnet to discover live hosts on the local network."""
+        os_name, is_admin = check_privileges()
+        if os_name == "android":
+            return [{"error": "ARP-based discovery is not supported on this device."}]
+        if not is_admin:
+            error_msg = "Run application with Administrator rights." if os_name == "windows" else "Run application using sudo."
+            return [{"error": f"Permission Denied. {error_msg}"}]
+
+        devices = []
+        try:
+            # Build a broadcast Ethernet frame carrying an ARP "who-has" request
+            # for every host address in the target subnet.
+            arp_request = ARP(pdst=subnet)
+            broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
+            packet = broadcast / arp_request
+
+            # srp() sends at Layer 2 and returns (answered, unanswered) pairs.
+            answered, _ = srp(packet, timeout=timeout, verbose=0)
+
+            for _, received in answered:
+                device = {"ip": received.psrc, "mac": received.hwsrc}
+                devices.append(device)
+                # Stream each discovered host back to the GUI/CLI as it's found
+                if progress_callback:
+                    progress_callback(device)
+
+        except Exception as e:
+            logger.error(f"Local discovery error on subnet {subnet}: {e}")
+            return [{"error": f"Discovery failed: {e}"}]
+
+        return devices
+
+    @staticmethod
     def network_traceroute(target):
         """Maps the physical network hops required to reach the target."""
         os_name, is_admin = check_privileges()

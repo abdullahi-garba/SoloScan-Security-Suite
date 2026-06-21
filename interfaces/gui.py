@@ -1,6 +1,7 @@
 import flet as ft
 import threading
 import time
+import random
 import ipaddress
 import socket
 import shlex
@@ -231,7 +232,7 @@ def run_gui():
                     page.update()
 
                 def start_scan(e):
-                    table.rows.clear(); progress.visible = True; page.update()
+                    table.rows.clear(); progress.visible = True; status_text.value = ""; page.update()
                     target = target_input.value
                     is_stealth = SCAN_MODES[profile_dropdown.value]["stealth"]
 
@@ -251,16 +252,116 @@ def run_gui():
 
                     def on_port(port, status, service, banner):
                         color = ft.colors.GREEN_ACCENT if status == "OPEN" else ft.colors.ORANGE_400
+                        display_banner = banner
+                        # Flag banners that match known-vulnerable service signatures
+                        if status == "OPEN" and banner:
+                            vulns = WebVulnScanner.check_cve_heuristics(banner)
+                            if vulns:
+                                display_banner = f"{banner}  |  {' / '.join(vulns)}"
+                                color = ft.colors.RED_400
+                                print_cli(f"  [!!] {port}/tcp CVE MATCH: {' / '.join(vulns)}", ft.colors.RED_400)
                         table.rows.append(ft.DataRow(cells=[
-                            ft.DataCell(ft.Text(str(port))), ft.DataCell(ft.Text(status, color=color)), ft.DataCell(ft.Text(f"{service} | {banner}"))
+                            ft.DataCell(ft.Text(str(port))), ft.DataCell(ft.Text(status, color=color)), ft.DataCell(ft.Text(f"{service} | {display_banner}"))
                         ]))
                         print_cli(f"  [+] {port:<5}/tcp | {status:<8} | {service}", color)
                         page.update()
 
                     def run():
-                        res = ScanEngine.stealth_syn_scan(target, ports, on_port) if is_stealth else ScanEngine.port_scan(target, ports, on_port)
-                        page.client_storage.set("port_data", res)
-                        progress.visible = False; page.update()
+                        try:
+                            res = ScanEngine.stealth_syn_scan(target, ports, on_port) if is_stealth else ScanEngine.port_scan(target, ports, on_port)
+                            page.client_storage.set("port_data", res)
+                        except Exception as ex:
+                            status_text.value, status_text.color = f"Scan failed: {ex}", ft.colors.RED_400
+                        finally:
+                            progress.visible = False; page.update()
+
+                    threading.Thread(target=run, daemon=True).start()
+
+                # --- Local Network Device Discovery (ARP sweep) ---
+                subnet_input = ft.TextField(label="Subnet (CIDR)", value=get_default_subnet(), width=220)
+                discover_progress = ft.ProgressRing(visible=False, width=18, height=18)
+                discover_status = ft.Text("")
+                device_table = ft.DataTable(columns=[
+                    ft.DataColumn(ft.Text("IP Address")), ft.DataColumn(ft.Text("MAC Address"))
+                ], rows=[])
+
+                def start_discovery(e):
+                    device_table.rows.clear(); discover_progress.visible = True; discover_status.value = ""; page.update()
+                    subnet = subnet_input.value
+                    print_cli(f"PS> discover {subnet}", ft.colors.BLUE_200)
+
+                    def on_device(device):
+                        device_table.rows.append(ft.DataRow(cells=[
+                            ft.DataCell(ft.Text(device["ip"])), ft.DataCell(ft.Text(device["mac"]))
+                        ]))
+                        print_cli(f"  [➔] Device Found: IP = {device['ip']:<15} | MAC = {device['mac']}", ft.colors.GREEN_ACCENT)
+                        page.update()
+
+                    def run():
+                        try:
+                            res = ScanEngine.local_discovery(subnet, on_device)
+                            if res and isinstance(res, list) and "error" in res[0]:
+                                discover_status.value, discover_status.color = res[0]["error"], ft.colors.RED_400
+                            else:
+                                discover_status.value, discover_status.color = f"Found {len(res)} active device(s).", ft.colors.GREEN_ACCENT
+                        except Exception as ex:
+                            discover_status.value, discover_status.color = f"Discovery failed: {ex}", ft.colors.RED_400
+                        finally:
+                            discover_progress.visible = False; page.update()
+
+                    threading.Thread(target=run, daemon=True).start()
+
+                # --- Traceroute ---
+                trace_status = ft.Text("")
+                trace_output = ft.Column(spacing=2, scroll=ft.ScrollMode.AUTO)
+
+                def start_traceroute(e):
+                    trace_output.controls.clear(); trace_status.value, trace_status.color = "Tracing route...", ft.colors.GREY_400; page.update()
+                    target = target_input.value
+                    print_cli(f"PS> traceroute {target}", ft.colors.BLUE_200)
+
+                    def run():
+                        try:
+                            hops = ScanEngine.network_traceroute(target)
+                            if hops and "error" in hops[0]:
+                                trace_status.value, trace_status.color = hops[0]["error"], ft.colors.RED_400
+                            else:
+                                trace_status.value, trace_status.color = f"{len(hops)} hop(s) found.", ft.colors.GREEN_ACCENT
+                                for h in hops:
+                                    line = f"  Hop {h['hop']:<3} -> {h['ip']}"
+                                    trace_output.controls.append(ft.Text(line, font_family="Consolas", size=12))
+                                    print_cli(line, ft.colors.WHITE)
+                        except Exception as ex:
+                            trace_status.value, trace_status.color = f"Traceroute failed: {ex}", ft.colors.RED_400
+                        page.update()
+
+                    threading.Thread(target=run, daemon=True).start()
+
+                # --- Default Credential Audit ---
+                bf_service_dropdown = ft.Dropdown(
+                    label="Service", options=[ft.dropdown.Option("ftp"), ft.dropdown.Option("http")],
+                    value="ftp", width=120
+                )
+                bf_status = ft.Text("")
+
+                def start_bruteforce(e):
+                    bf_status.value, bf_status.color = "Testing common credentials...", ft.colors.GREY_400; page.update()
+                    target = target_input.value
+                    service = bf_service_dropdown.value
+                    print_cli(f"PS> credential-audit {target} --service {service}", ft.colors.BLUE_200)
+
+                    def run():
+                        try:
+                            res = ScanEngine.brute_force_login(target, service)
+                            if res.get("success"):
+                                bf_status.value = f"Weak credentials found: {res['user']} / {res['password']}"
+                                bf_status.color = ft.colors.RED_400
+                                print_cli(f"  [!!] Valid credentials: {res['user']}:{res['password']}", ft.colors.RED_400)
+                            else:
+                                bf_status.value, bf_status.color = "No common credentials succeeded.", ft.colors.GREEN_ACCENT
+                        except Exception as ex:
+                            bf_status.value, bf_status.color = f"Credential audit failed: {ex}", ft.colors.RED_400
+                        page.update()
 
                     threading.Thread(target=run, daemon=True).start()
 
@@ -268,8 +369,23 @@ def run_gui():
                     ft.Text("Active Network Probing", size=22, weight="bold"),
                     ft.Row([target_input, ports_input, profile_dropdown]),
                     ft.Row([ft.ElevatedButton("Engage Target", on_click=start_scan), ft.ElevatedButton("Export PDF", on_click=export_active_pdf, icon=ft.icons.PICTURE_AS_PDF, icon_color=ft.colors.RED_400), progress]),
-                    status_text, ft.Divider(), ft.ListView([table], expand=True, auto_scroll=True)
-                ], expand=True)
+                    status_text, ft.Divider(), ft.ListView([table], expand=False, auto_scroll=True),
+
+                    ft.Container(height=10), ft.Divider(),
+                    ft.Text("Local Network Device Discovery (ARP Sweep)", weight="bold", color=ft.colors.BLUE_200),
+                    ft.Row([subnet_input, ft.ElevatedButton("Discover Devices", on_click=start_discovery), discover_progress]),
+                    discover_status, ft.Container(ft.ListView([device_table], auto_scroll=True), height=150),
+
+                    ft.Container(height=10), ft.Divider(),
+                    ft.Text("Traceroute & Default Credential Audit", weight="bold", color=ft.colors.BLUE_200),
+                    ft.Row([
+                        ft.ElevatedButton("Trace Route", on_click=start_traceroute),
+                        bf_service_dropdown,
+                        ft.ElevatedButton("Test Default Credentials", on_click=start_bruteforce),
+                    ]),
+                    trace_status, ft.Container(trace_output, height=100, padding=5, bgcolor="#0A0A0A", border_radius=5),
+                    bf_status,
+                ], expand=True, scroll=ft.ScrollMode.AUTO)
 
             # ----------------------------------------------------
             # VIEW 2: SIEM REAL-TIME MONITORING
@@ -345,30 +461,64 @@ def run_gui():
 
                     def run():
                         export_data = []
-                        whois = PassiveEngine.get_whois(target)
-                        export_data.append({"WHOIS": whois})
-                        results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
-                            ft.Text("WHOIS Registry", weight="bold", color=ft.colors.BLUE_200), ft.Text(whois[:300] + "...", size=12)
-                        ]))))
-                        
-                        subs = PassiveEngine.get_subdomains(target)
-                        if subs:
-                            export_data.append({"Subdomains": subs})
+                        try:
+                            dns_info = PassiveEngine.get_dns_records(target)
+                            export_data.append({"DNS Records": dns_info})
+                            if "error" not in dns_info:
+                                results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                    ft.Text("DNS Resolution", weight="bold", color=ft.colors.BLUE_200),
+                                    ft.Text(f"Domain: {dns_info['Target Domain']}", size=12),
+                                    ft.Text(f"Resolved IP: {dns_info['Resolved IP']}", size=12),
+                                    ft.Text(f"Aliases: {dns_info['Known Aliases']}", size=12),
+                                ]))))
+                                page.update()
+
+                                geo = PassiveEngine.get_ip_geolocation(dns_info["Resolved IP"])
+                                export_data.append({"Geolocation": geo})
+                                if "error" not in geo:
+                                    geo_text = "\n".join([f"{k}: {v}" for k, v in geo.items()])
+                                    results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                        ft.Text("IP Geolocation", weight="bold", color=ft.colors.BLUE_200), ft.Text(geo_text, size=12)
+                                    ]))))
+                                    page.update()
+
+                            whois = PassiveEngine.get_whois(target)
+                            export_data.append({"WHOIS": whois})
                             results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
-                                ft.Text("Subdomains", weight="bold", color=ft.colors.BLUE_200), ft.Text("\n".join(subs), size=12)
+                                ft.Text("WHOIS Registry", weight="bold", color=ft.colors.BLUE_200), ft.Text(whois[:300] + "...", size=12)
                             ]))))
-                            
-                        fuzz = WebVulnScanner.fuzz_directories(target)
-                        if fuzz:
-                            export_data.append({"Fuzzing Hits": fuzz})
-                            fuzz_text = "\n".join([f"{f['path']} ({f['status']})" for f in fuzz])
-                            results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
-                                ft.Text("Fuzzing Hits", weight="bold", color=ft.colors.RED_300), ft.Text(fuzz_text, color=ft.colors.GREEN_ACCENT)
-                            ]))))
-                        
-                        page.client_storage.set("passive_data", export_data)
-                        progress.visible = False; page.update()
-                        
+                            page.update()
+
+                            subs = PassiveEngine.get_subdomains(target)
+                            if subs:
+                                export_data.append({"Subdomains": subs})
+                                results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                    ft.Text("Subdomains", weight="bold", color=ft.colors.BLUE_200), ft.Text("\n".join(subs), size=12)
+                                ]))))
+                                page.update()
+
+                            headers_audit = WebVulnScanner.analyze_website(target)
+                            if headers_audit and "error" not in headers_audit[0]:
+                                export_data.append({"Header Misconfigurations": headers_audit})
+                                audit_text = "\n".join([f"[{v.get('severity', 'Info')}] {v.get('vulnerability', '')} - {v.get('remediation', '')}" for v in headers_audit])
+                                results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                    ft.Text("HTTP Header Security Audit", weight="bold", color=ft.colors.ORANGE_400), ft.Text(audit_text, size=12)
+                                ]))))
+                                page.update()
+
+                            fuzz = WebVulnScanner.fuzz_directories(target)
+                            if fuzz:
+                                export_data.append({"Fuzzing Hits": fuzz})
+                                fuzz_text = "\n".join([f"{f['path']} ({f['status']})" for f in fuzz])
+                                results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                    ft.Text("Fuzzing Hits", weight="bold", color=ft.colors.RED_300), ft.Text(fuzz_text, color=ft.colors.GREEN_ACCENT)
+                                ]))))
+                        except Exception as ex:
+                            results_list.controls.append(ft.Text(f"OSINT pipeline error: {ex}", color=ft.colors.RED_400))
+                        finally:
+                            page.client_storage.set("passive_data", export_data)
+                            progress.visible = False; page.update()
+
                     threading.Thread(target=run, daemon=True).start()
 
                 return ft.Column([
@@ -431,6 +581,7 @@ def run_gui():
             def sniffer_view():
                 log_list = ft.ListView(expand=True, auto_scroll=True, spacing=2)
                 status_text = ft.Text("Sniffer Offline", color=ft.colors.GREY_400)
+                test_status = ft.Text("")
                 
                 def map_color(color_str):
                     colors = {"WHITE": ft.colors.WHITE, "RED": ft.colors.RED_400, "GREEN": ft.colors.GREEN_ACCENT, "ORANGE": ft.colors.ORANGE_400, "GREY": ft.colors.GREY_500}
@@ -453,11 +604,45 @@ def run_gui():
                         threading.Thread(target=sniffer_instance.start, args=(sniffer_log,), daemon=True).start()
                     page.update()
 
+                def generate_test_traffic(e):
+                    """Sends a real, harmless SYN burst to localhost only -- enough to legitimately
+                    trip SecurityMonitor.SYN_THRESHOLD and demonstrate the live alert above."""
+                    if not sniffer_instance.running:
+                        test_status.value, test_status.color = "Start the sniffer above first, so it can observe the test traffic.", ft.colors.ORANGE_400
+                        page.update(); return
+
+                    test_status.value, test_status.color = "Sending test SYN burst to 127.0.0.1...", ft.colors.GREY_400
+                    page.update()
+                    print_cli("PS> generate-test-traffic 127.0.0.1 (loopback only, 70 SYN packets)", ft.colors.BLUE_200)
+
+                    def run():
+                        try:
+                            # 70 high, unused local ports -> 70 real SYN packets to 127.0.0.1.
+                            # No spoofing, no external target -- purely to exercise the IDS threshold.
+                            test_ports = list(range(20000, 20070))
+                            res = ScanEngine.stealth_syn_scan("127.0.0.1", test_ports)
+                            if res and isinstance(res, list) and "error" in res[0]:
+                                test_status.value, test_status.color = res[0]["error"], ft.colors.RED_400
+                            else:
+                                test_status.value, test_status.color = (
+                                    f"Sent {len(test_ports)} real SYN packets to 127.0.0.1 -- "
+                                    "watch the log above for a SYN Flood alert."
+                                ), ft.colors.GREEN_ACCENT
+                        except Exception as ex:
+                            test_status.value, test_status.color = f"Test traffic failed: {ex}", ft.colors.RED_400
+                        page.update()
+
+                    threading.Thread(target=run, daemon=True).start()
+
                 return ft.Column([
                     ft.Text("Intrusion Detection Sniffer", size=22, weight="bold"),
                     ft.Text("Monitors local interfaces for suspicious traffic and MITRE ATT&CK patterns.", color=ft.colors.GREY_400),
                     ft.Row([ft.ElevatedButton("Start Sniffing", icon=ft.icons.PLAY_ARROW, on_click=toggle_sniffer), status_text]), ft.Divider(),
-                    ft.Container(log_list, expand=True, bgcolor="#0A0A0A", padding=10, border_radius=5, border=ft.border.all(1, ft.colors.GREY_800))
+                    ft.Container(log_list, expand=True, bgcolor="#0A0A0A", padding=10, border_radius=5, border=ft.border.all(1, ft.colors.GREY_800)),
+                    ft.Container(height=10), ft.Divider(),
+                    ft.Text("IDS Self-Test", weight="bold", color=ft.colors.BLUE_200),
+                    ft.Text("Generates real (but harmless) SYN packets to 127.0.0.1 only, to verify the SYN-flood detector above fires correctly.", color=ft.colors.GREY_400, size=12),
+                    ft.Row([ft.ElevatedButton("Generate Test Traffic (Loopback)", icon=ft.icons.BUG_REPORT, on_click=generate_test_traffic), test_status])
                 ], expand=True)
 
             # ----------------------------------------------------
@@ -522,12 +707,120 @@ def run_gui():
                 ], expand=True)
 
             # ----------------------------------------------------
+            # VIEW 7: DOS / DDOS CONSOLE -- VISUAL SIMULATION ONLY
+            # ----------------------------------------------------
+            def dos_ddos_sim_view():
+                """
+                Cosmetic mock-up of a flood-attack console for classroom/demo purposes.
+                This function contains NO networking logic of any kind: no sockets,
+                no Scapy, no requests, no DNS resolution. It only prints scripted
+                strings with randomized fake counters via time.sleep(). It is not
+                capable of sending a single real packet to anything.
+                """
+                target_input = ft.TextField(label="Target Host (cosmetic only)", value="10.0.0.5", width=200)
+                port_input = ft.TextField(label="Port (cosmetic only)", value="80", width=120)
+                method_dropdown = ft.Dropdown(
+                    label="Method (label only)",
+                    options=[ft.dropdown.Option(m) for m in [
+                        "SYN Flood (Simulated)", "ICMP Flood (Simulated)",
+                        "UDP Flood (Simulated)", "HTTP Flood (Simulated)"
+                    ]],
+                    value="SYN Flood (Simulated)", width=220
+                )
+                count_input = ft.TextField(label="Packet Count (cosmetic only)", value="500", width=170)
+                term_output = ft.ListView(expand=True, auto_scroll=True, spacing=1)
+                run_state = {"running": False}
+
+                def sim_print(line, color=ft.colors.GREEN_ACCENT_400):
+                    term_output.controls.append(ft.Text(line, color=color, font_family="Consolas", size=12))
+                    if len(term_output.controls) > 400: term_output.controls.pop(0)
+                    page.update()
+
+                def run_simulation(e):
+                    if run_state["running"]:
+                        return
+                    try:
+                        total = max(1, min(int(count_input.value), 5000))
+                    except Exception:
+                        total = 500
+                    target, port, method = target_input.value, port_input.value, method_dropdown.value
+
+                    run_state["running"] = True
+                    term_output.controls.clear(); page.update()
+                    sim_print("=" * 60, ft.colors.GREY_600)
+                    sim_print("[SIMULATED CONSOLE] No real network traffic will be sent.", ft.colors.ORANGE_400)
+                    sim_print("=" * 60, ft.colors.GREY_600)
+
+                    def run():
+                        try:
+                            sim_print(f"[*] [SIM] Resolving target {target} ...", ft.colors.WHITE)
+                            time.sleep(0.4)
+                            sim_print(f"[*] [SIM] Target resolved (fake): {target}", ft.colors.WHITE)
+                            time.sleep(0.3)
+                            sim_print(f"[*] [SIM] Initializing {method} against {target}:{port} ...", ft.colors.WHITE)
+                            time.sleep(0.4)
+                            sim_print(f"[*] [SIM] Spawning {min(total, 50)} fake worker thread(s) ...", ft.colors.WHITE)
+                            time.sleep(0.5)
+
+                            step = max(1, total // 40)
+                            sent = 0
+                            while sent < total and run_state["running"]:
+                                sent = min(total, sent + step)
+                                fake_rate = random.randint(800, 2400)
+                                sim_print(f"[+] [SIM] Packets dispatched: {sent}/{total}  (fake rate: {fake_rate}/s, 0 bytes actually sent)", ft.colors.GREEN_ACCENT)
+                                time.sleep(0.1)
+
+                            if run_state["running"]:
+                                sim_print("-" * 60, ft.colors.GREY_600)
+                                sim_print(f"[OK] [SIM] Simulation complete. Total simulated packets: {total}.", ft.colors.GREEN_ACCENT)
+                                sim_print("[i] [SIM] Reminder: this panel is cosmetic only -- no sockets were opened, no packets left this process.", ft.colors.ORANGE_400)
+                                sim_print("[i] [SIM] For REAL flood detection (safely), use 'Generate Test Traffic' under the Sniffer tab.", ft.colors.BLUE_200)
+                            else:
+                                sim_print("[!] [SIM] Simulation stopped by user.", ft.colors.ORANGE_400)
+                        finally:
+                            run_state["running"] = False
+                            page.update()
+
+                    threading.Thread(target=run, daemon=True).start()
+
+                def stop_simulation(e):
+                    run_state["running"] = False
+
+                return ft.Column([
+                    ft.Row([
+                        ft.Icon(ft.icons.WARNING_AMBER_ROUNDED, color=ft.colors.ORANGE_400),
+                        ft.Text("DoS / DDoS Console -- SIMULATION ONLY", size=22, weight="bold", color=ft.colors.ORANGE_400),
+                    ]),
+                    ft.Container(
+                        padding=10, bgcolor="#231a08", border_radius=5, border=ft.border.all(1, ft.colors.ORANGE_400),
+                        content=ft.Text(
+                            "This panel is a visual mock-up for demos and training only. It does not open sockets, "
+                            "craft packets, resolve hosts, or send any network traffic of any kind -- it only prints "
+                            "scripted text with fake counters. For a real, safe demonstration of the IDS detecting an "
+                            "actual flood, use 'Generate Test Traffic' on the Sniffer tab (loopback only).",
+                            color=ft.colors.ORANGE_100, size=12
+                        )
+                    ),
+                    ft.Row([target_input, port_input, method_dropdown, count_input]),
+                    ft.Row([
+                        ft.ElevatedButton("Run Simulation", icon=ft.icons.PLAY_ARROW, on_click=run_simulation, bgcolor=ft.colors.ORANGE_900, color=ft.colors.WHITE),
+                        ft.ElevatedButton("Stop", icon=ft.icons.STOP, on_click=stop_simulation, bgcolor=ft.colors.SURFACE_VARIANT),
+                    ]),
+                    ft.Divider(),
+                    ft.Container(term_output, expand=True, bgcolor="#0A0A0A", padding=10, border_radius=5, border=ft.border.all(1, ft.colors.GREY_800))
+                ], expand=True)
+
+            # ----------------------------------------------------
             # GLOBAL NAVIGATION & FRAME ASSEMBLY
             # ----------------------------------------------------
             def navigation_handler(e):
                 index = e.control.selected_index
-                views = [active_recon_view(), monitor_view(), passive_recon_view(), defense_view(), sniffer_view(), tools_view()]
-                gui_area.content = views[index]
+                # Only build the view that was actually selected -- the previous version
+                # called every view-builder on every click, which silently re-created
+                # monitor_view()/sniffer_view() (resetting their state) even when you
+                # clicked an unrelated tab, orphaning any running monitor/sniffer thread.
+                view_builders = [active_recon_view, monitor_view, passive_recon_view, defense_view, sniffer_view, tools_view, dos_ddos_sim_view]
+                gui_area.content = view_builders[index]()
                 page.update()
 
             nav_rail = ft.NavigationRail(
@@ -539,6 +832,7 @@ def run_gui():
                     ft.NavigationRailDestination(icon=ft.icons.SHIELD, label="Defense"),
                     ft.NavigationRailDestination(icon=ft.icons.WAVES, label="Sniffer"),
                     ft.NavigationRailDestination(icon=ft.icons.BUILD, label="Tools"),
+                    ft.NavigationRailDestination(icon=ft.icons.WARNING_AMBER_ROUNDED, label="Sim DoS"),
                 ],
                 on_change=navigation_handler,
             )
