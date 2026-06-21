@@ -1,0 +1,26 @@
+[
+    {
+        "target": "142.251.39.206",
+        "ip": "142.251.39.206",
+        "port": 22,
+        "service": "SSH",
+        "status": "FILTERED",
+        "banner": "N/A (Stealth)"
+    },
+    {
+        "target": "142.251.39.206",
+        "ip": "142.251.39.206",
+        "port": 80,
+        "service": "HTTP",
+        "status": "OPEN",
+        "banner": "N/A (Stealth)"
+    },
+    {
+        "target": "142.251.39.206",
+        "ip": "142.251.39.206",
+        "port": 443,
+        "service": "HTTPS",
+        "status": "OPEN",
+        "banner": "N/A (Stealth)"
+    }
+]

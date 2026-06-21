@@ -1,0 +1,123 @@
+2026-06-20 18:19:05 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 18:19:05 | INFO | Starting up TCP server on localhost:60246
+2026-06-20 18:19:05 | INFO | Flet app has started...
+2026-06-20 18:19:05 | INFO | App URL: tcp://localhost:60246
+2026-06-20 18:19:05 | INFO | Starting Flet View app...
+2026-06-20 18:19:05 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 18:19:05 | INFO | App session started
+2026-06-20 18:19:33 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 18:19:33 | INFO | Starting up TCP server on localhost:60276
+2026-06-20 18:19:33 | INFO | Flet app has started...
+2026-06-20 18:19:33 | INFO | App URL: tcp://localhost:60276
+2026-06-20 18:19:33 | INFO | Starting Flet View app...
+2026-06-20 18:19:33 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 18:19:33 | INFO | App session started
+2026-06-20 18:21:49 | ERROR | Could not resolve hostname: https://futminna.edu.ng/
+2026-06-20 18:21:53 | ERROR | Could not resolve hostname: https://futminna.edu.ng/
+2026-06-20 18:22:00 | ERROR | Could not resolve hostname: https://futminna.edu.ng/
+2026-06-20 18:22:04 | ERROR | Could not resolve hostname: https://futminna.edu.ng/
+2026-06-20 18:22:08 | ERROR | Could not resolve hostname: https://futminna.edu.ng/
+2026-06-20 18:22:47 | ERROR | Could not resolve hostname: https://mynum.newgateuniversityminna.edu.ng/
+2026-06-20 18:22:49 | ERROR | Could not resolve hostname: https://mynum.newgateuniversityminna.edu.ng/
+2026-06-20 18:25:32 | ERROR | Could not resolve hostname: https://futminna.edu.ng/
+2026-06-20 18:26:07 | ERROR | Could not resolve hostname: https://mynum.newgateuniversityminna.edu.ng/
+2026-06-20 18:42:46 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 18:42:46 | INFO | Starting up TCP server on localhost:54667
+2026-06-20 18:42:46 | INFO | Flet app has started...
+2026-06-20 18:42:46 | INFO | App URL: tcp://localhost:54667
+2026-06-20 18:42:46 | INFO | Starting Flet View app...
+2026-06-20 18:42:46 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 18:42:47 | INFO | App session started
+2026-06-20 18:45:16 | ERROR | Vulnerability check exception for http://futminna.edu.ng: HTTPSConnectionPool(host='futminna.edu.ng', port=443): Read timed out.
+2026-06-20 19:34:10 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 19:34:10 | INFO | Starting up TCP server on localhost:65141
+2026-06-20 19:34:10 | INFO | Flet app has started...
+2026-06-20 19:34:10 | INFO | App URL: tcp://localhost:65141
+2026-06-20 19:34:10 | INFO | Starting Flet View app...
+2026-06-20 19:34:10 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 19:34:11 | INFO | App session started
+2026-06-20 22:38:50 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 22:38:50 | INFO | Starting up TCP server on localhost:62975
+2026-06-20 22:38:50 | INFO | Flet app has started...
+2026-06-20 22:38:50 | INFO | App URL: tcp://localhost:62975
+2026-06-20 22:38:50 | INFO | Starting Flet View app...
+2026-06-20 22:38:50 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 22:38:51 | INFO | App session started
+2026-06-20 22:50:43 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 22:50:43 | INFO | Starting up TCP server on localhost:64286
+2026-06-20 22:50:43 | INFO | Flet app has started...
+2026-06-20 22:50:43 | INFO | App URL: tcp://localhost:64286
+2026-06-20 22:50:43 | INFO | Starting Flet View app...
+2026-06-20 22:50:43 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 22:50:44 | INFO | App session started
+2026-06-20 22:53:05 | INFO | Report compiled successfully: reports/active_scan_20260620_225305.json
+2026-06-20 23:10:31 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 23:10:31 | INFO | Starting up TCP server on localhost:49393
+2026-06-20 23:10:31 | INFO | Flet app has started...
+2026-06-20 23:10:31 | INFO | App URL: tcp://localhost:49393
+2026-06-20 23:10:31 | INFO | Starting Flet View app...
+2026-06-20 23:10:31 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 23:10:32 | INFO | App session started
+2026-06-20 23:12:27 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 23:12:27 | INFO | Starting up TCP server on localhost:63722
+2026-06-20 23:12:27 | INFO | Flet app has started...
+2026-06-20 23:12:27 | INFO | App URL: tcp://localhost:63722
+2026-06-20 23:12:27 | INFO | Starting Flet View app...
+2026-06-20 23:12:27 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 23:12:27 | INFO | App session started
+2026-06-20 23:13:09 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-20 23:13:09 | INFO | Starting up TCP server on localhost:63748
+2026-06-20 23:13:09 | INFO | Flet app has started...
+2026-06-20 23:13:09 | INFO | App URL: tcp://localhost:63748
+2026-06-20 23:13:09 | INFO | Starting Flet View app...
+2026-06-20 23:13:09 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-20 23:13:09 | INFO | App session started
+2026-06-21 13:45:09 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 13:45:09 | INFO | Starting up TCP server on localhost:60780
+2026-06-21 13:45:09 | INFO | Flet app has started...
+2026-06-21 13:45:09 | INFO | App URL: tcp://localhost:60780
+2026-06-21 13:45:09 | INFO | Starting Flet View app...
+2026-06-21 13:45:09 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 13:45:10 | INFO | App session started
+2026-06-21 15:39:16 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 15:39:16 | INFO | Starting up TCP server on localhost:60747
+2026-06-21 15:39:16 | INFO | Flet app has started...
+2026-06-21 15:39:16 | INFO | App URL: tcp://localhost:60747
+2026-06-21 15:39:16 | INFO | Starting Flet View app...
+2026-06-21 15:39:16 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 15:39:18 | INFO | App session started
+2026-06-21 15:42:13 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 15:42:13 | INFO | Starting up TCP server on localhost:64935
+2026-06-21 15:42:13 | INFO | Flet app has started...
+2026-06-21 15:42:13 | INFO | App URL: tcp://localhost:64935
+2026-06-21 15:42:13 | INFO | Starting Flet View app...
+2026-06-21 15:42:13 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 15:42:14 | INFO | App session started
+2026-06-21 15:50:53 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 15:50:53 | INFO | Starting up TCP server on localhost:62809
+2026-06-21 15:50:53 | INFO | Flet app has started...
+2026-06-21 15:50:53 | INFO | App URL: tcp://localhost:62809
+2026-06-21 15:50:53 | INFO | Starting Flet View app...
+2026-06-21 15:50:53 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 15:50:54 | INFO | App session started
+2026-06-21 16:03:08 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 16:03:08 | INFO | Starting up TCP server on localhost:50788
+2026-06-21 16:03:08 | INFO | Flet app has started...
+2026-06-21 16:03:08 | INFO | App URL: tcp://localhost:50788
+2026-06-21 16:03:08 | INFO | Starting Flet View app...
+2026-06-21 16:03:08 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 16:03:09 | INFO | App session started
+2026-06-21 16:58:34 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 16:58:34 | INFO | Starting up TCP server on localhost:61573
+2026-06-21 16:58:34 | INFO | Flet app has started...
+2026-06-21 16:58:34 | INFO | App URL: tcp://localhost:61573
+2026-06-21 16:58:34 | INFO | Starting Flet View app...
+2026-06-21 16:58:34 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 16:58:35 | INFO | App session started
+2026-06-21 17:00:10 | INFO | Assets path configured: C:\Users\HP\Desktop\soloscan\assets
+2026-06-21 17:00:10 | INFO | Starting up TCP server on localhost:64817
+2026-06-21 17:00:10 | INFO | Flet app has started...
+2026-06-21 17:00:10 | INFO | App URL: tcp://localhost:64817
+2026-06-21 17:00:10 | INFO | Starting Flet View app...
+2026-06-21 17:00:10 | INFO | Flet View found in: C:\Users\HP\Desktop\soloscan\env\Lib\site-packages\flet\bin\flet\flet.exe
+2026-06-21 17:00:10 | INFO | App session started

@@ -1,0 +1,29 @@
+=== SoloScan CLI Session Log ===
+Generated: 2026-06-20 23:13:25
+=================================
+
+SoloScan CLI Engine initialized.
+PS> traceroute 127.0.0.1
+[*] Tracing network hops to 127.0.0.1...
+  [➔] Hop 1: 127.0.0.1
+  [➔] Hop 2: 127.0.0.1
+  [➔] Hop 3: 127.0.0.1
+  [➔] Hop 4: 127.0.0.1
+  [➔] Hop 5: 127.0.0.1
+  [➔] Hop 6: 127.0.0.1
+  [➔] Hop 7: 127.0.0.1
+  [➔] Hop 8: 127.0.0.1
+  [➔] Hop 9: 127.0.0.1
+  [➔] Hop 10: 127.0.0.1
+  [➔] Hop 11: 127.0.0.1
+  [➔] Hop 12: 127.0.0.1
+  [➔] Hop 13: 127.0.0.1
+  [➔] Hop 14: 127.0.0.1
+  [➔] Hop 15: 127.0.0.1
+[*] Traceroute Complete.
+PS> scan 127.0.0.1 22,80,443 
+[*] Scanning 127.0.0.1 for ports...
+  [+] 22   /tcp | CLOSED   | SSH        | 
+  [+] 80   /tcp | CLOSED   | HTTP       | 
+  [+] 443  /tcp | CLOSED   | HTTPS      | 
+[*] Port scan complete.
