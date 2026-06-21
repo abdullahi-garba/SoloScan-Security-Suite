@@ -41,7 +41,7 @@ def run_gui():
         page.padding = 0  # Remove padding for edge-to-edge splash screen
 
         # ==========================================
-        # 🎬 SPLASH SCREEN (VECTOR ANIMATION)
+        # 🎬 PHASE 1: SPLASH SCREEN
         # ==========================================
         splash_screen = ft.Container(
             expand=True,
@@ -59,7 +59,6 @@ def run_gui():
                         animate=True
                     ),
                     ft.Text("SoloScan", size=55, weight="bold", color=ft.colors.GREEN_ACCENT_700, font_family="Consolas"),
-                    # Note: Removed letter_spacing to prevent Flet version errors. Added manual spacing.
                     ft.Text("S E C U R I T Y   S U I T E   P R O", size=18, weight="w400", color=ft.colors.WHITE),
                     ft.Container(height=30),
                     
@@ -79,550 +78,508 @@ def run_gui():
         # Hold the splash screen for 4.5 seconds to simulate loading
         time.sleep(4.5)
         
-        # Clear the splash screen to load the main application
+        # Clear the splash screen
         page.controls.clear()
         page.padding = 10 
         page.update()
 
         # ==========================================
-        # ⚙️ INITIALIZE MAIN GUI VARIABLES
+        # ⚖️ PHASE 2: EULA / TERMS & CONDITIONS
         # ==========================================
-        gui_area = ft.Container(expand=5, padding=10)
-        page.client_storage.set("port_data", [])
-        page.client_storage.set("passive_data", [])
+        def show_eula():
+            def accept_eula(e):
+                page.controls.clear()
+                build_main_interface()
 
-        # ----------------------------------------------------
-        # EMBEDDED CLI TERMINAL (Right Side Panel)
-        # ----------------------------------------------------
-        cli_output = ft.ListView(expand=True, auto_scroll=True, spacing=2)
-        
-        def print_cli(text, color=ft.colors.WHITE):
-            """Appends text to the terminal and auto-scrolls."""
-            cli_output.controls.append(ft.Text(text, color=color, font_family="Consolas", size=12))
-            page.update()
+            def decline_eula(e):
+                # Forcefully terminate the application if declined
+                os._exit(0) 
 
-        def execute_cli_command(e):
-            """Parses and executes commands typed into the bottom text box."""
-            cmd_str = cli_input.value.strip()
-            if not cmd_str: return
-            
-            print_cli(f"PS> {cmd_str}", ft.colors.BLUE_200)
-            cli_input.value = ""
-            page.update()
+            eula_text = """
+### END USER LICENSE AGREEMENT AND DISCLAIMER OF LIABILITY
 
-            try: 
-                args = shlex.split(cmd_str)
-            except ValueError:
-                print_cli("[-] Error parsing command.", ft.colors.RED_400)
-                return
+**By clicking "I AGREE & CONTINUE", you explicitly agree to the following terms:**
 
-            command = args[0].lower()
-            
-            if command == "clear": 
-                cli_output.controls.clear()
-                page.update()
-            else: 
-                print_cli(f"[*] Command executed: {command}. Check GUI for sync.", ft.colors.GREY_500)
+**1. Authorized Use Only** This Software is engineered strictly for academic research, authorized penetration testing, and defensive system auditing. You may only execute active scans, brute-force modules, and packet interception against networks, endpoints, and domains for which you have explicit, documented, and legal authorization to test.
 
-        cli_input = ft.TextField(
-            hint_text="Terminal...", 
-            bgcolor=ft.colors.BLACK, 
-            color=ft.colors.GREEN_ACCENT_400, 
-            text_style=ft.TextStyle(font_family="Consolas"), 
-            on_submit=execute_cli_command
-        )
-        
-        cli_area = ft.Container(
-            expand=4, bgcolor="#0A0A0A", padding=10, border_radius=10, border=ft.border.all(1, ft.colors.GREY_800),
-            content=ft.Column([
-                ft.Row([
-                    ft.Icon(ft.icons.TERMINAL, color=ft.colors.WHITE), 
-                    ft.Text("Embedded Terminal", weight="bold", font_family="Consolas", expand=True)
-                ]),
-                ft.Divider(color=ft.colors.GREY_800), cli_output, cli_input
-            ])
-        )
+**2. Prohibition of Malicious Use** You shall not use the Software to conduct unauthorized denial-of-service (DoS) attacks, intercept third-party communications without consent, bypass access controls, or facilitate any activity that violates local, state, national, or international computer misuse and wiretapping laws.
 
-        # ==========================================
-        # BOILERPLATE HEADER (Enterprise Feel)
-        # ==========================================
-        def load_boilerplate():
-            """Loads the professional terminal header silently on startup."""
-            is_elevated = "ELEVATED" if check_privileges()[1] else "STANDARD"
-            
-            print_cli("╔══════════════════════════════════════════════════════════════════╗", ft.colors.GREEN_ACCENT)
-            print_cli("║                   SOLOSCAN SECURITY SUITE PRO                    ║", ft.colors.GREEN_ACCENT)
-            print_cli("║             Developed by: GarbaTheAnalyst Consultancy            ║", ft.colors.GREEN_ACCENT)
-            print_cli("╚══════════════════════════════════════════════════════════════════╝", ft.colors.GREEN_ACCENT)
-            print_cli(f"[*] System Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ft.colors.BLUE_200)
-            print_cli(f"[*] OS Kernel: {platform.system()} {platform.release()}", ft.colors.BLUE_200)
-            print_cli(f"[*] Privileges: {is_elevated}", ft.colors.BLUE_200)
-            print_cli("[*] Environment: Ready for Reconnaissance & Defense", ft.colors.GREEN_ACCENT)
-            print_cli("-" * 68)
-            print_cli("Type 'help' for command list.", ft.colors.GREY_500)
+**3. Disclaimer of Warranties** The Software is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
-        # Execute boilerplate printout immediately
-        load_boilerplate()
+**4. Limitation of Liability** Under no circumstances shall the developer (Garba the analyst), The Analyst Consultancy, or Newgate University Minna be held liable for any direct, indirect, incidental, special, exemplary, or consequential damages arising in any way out of the use, misuse, or inability to use this Software.
+            """
 
-        # ----------------------------------------------------
-        # VIEW 1: ACTIVE RECONNAISSANCE 
-        # ----------------------------------------------------
-        def active_recon_view():
-            target_input = ft.TextField(label="Target IP / Domain", value="127.0.0.1", expand=True)
-            ports_input = ft.TextField(label="Ports (e.g. 22,80,1-1000)", value="22,80,443", width=200)
-            profile_dropdown = ft.Dropdown(
-                label="Scan Profile", 
-                options=[ft.dropdown.Option(k) for k in SCAN_MODES.keys()], 
-                value="Standard (TCP Connect)", width=250
+            eula_container = ft.Container(
+                expand=True,
+                padding=40,
+                content=ft.Column([
+                    ft.Row([
+                        ft.Icon(ft.icons.WARNING_AMBER_ROUNDED, color=ft.colors.RED_400, size=40), 
+                        ft.Text("RESTRICTED SYSTEM: AUTHORIZED USE ONLY", size=24, weight="bold", color=ft.colors.RED_400)
+                    ]),
+                    ft.Divider(color=ft.colors.RED_900),
+                    ft.Container(
+                        content=ft.Markdown(eula_text, selectable=True),
+                        expand=True,
+                        padding=20,
+                        border=ft.border.all(1, ft.colors.GREY_800),
+                        border_radius=5,
+                        bgcolor="#0A0A0A"
+                    ),
+                    ft.Container(height=10),
+                    ft.Row([
+                        ft.ElevatedButton("DECLINE & EXIT", icon=ft.icons.CLOSE, on_click=decline_eula, bgcolor=ft.colors.RED_900, color=ft.colors.WHITE),
+                        ft.ElevatedButton("I AGREE & CONTINUE", icon=ft.icons.CHECK, on_click=accept_eula, bgcolor=ft.colors.GREEN_700, color=ft.colors.WHITE)
+                    ], alignment=ft.MainAxisAlignment.END)
+                ])
             )
-            progress = ft.ProgressRing(visible=False, width=20, height=20)
-            status_text = ft.Text("")
-            table = ft.DataTable(columns=[
-                ft.DataColumn(ft.Text("Port")), 
-                ft.DataColumn(ft.Text("Status")), 
-                ft.DataColumn(ft.Text("Service/Banner"))
-            ], rows=[])
+            page.add(eula_container)
+            page.update()
 
-            def export_active_pdf(e):
-                data = page.client_storage.get("port_data")
-                if not data:
-                    status_text.value = "No data to export."
-                    page.update()
-                    return
-                path = generate_pdf_report(data, title="Active Scan Report", filename="Active_Scan")
-                status_text.value = f"PDF Saved: {path}" if path else "PDF Export Failed."
-                print_cli(f"[*] Exported Active Scan PDF to {path}", ft.colors.GREEN_ACCENT)
-                page.update()
+        # ==========================================
+        # 🚀 PHASE 3: THE MAIN APPLICATION BUILDER
+        # ==========================================
+        def build_main_interface():
+            gui_area = ft.Container(expand=5, padding=10)
+            page.client_storage.set("port_data", [])
+            page.client_storage.set("passive_data", [])
 
-            def start_scan(e):
-                table.rows.clear()
-                progress.visible = True
-                page.update()
-                
-                target = target_input.value
-                is_stealth = SCAN_MODES[profile_dropdown.value]["stealth"]
-
-                # Advanced Port Parsing (handles ranges like 1-1000)
-                try:
-                    ports = []
-                    for part in ports_input.value.split(","):
-                        part = part.strip()
-                        if "-" in part:
-                            start, end = map(int, part.split("-"))
-                            ports.extend(range(start, end + 1))
-                        else: ports.append(int(part))
-                    ports = sorted(list(set(ports)))
-                except Exception:
-                    progress.visible = False
-                    status_text.value = "Invalid Ports Format"
-                    page.update()
-                    return
-
-                print_cli(f"PS> scan {target} {len(ports)} ports", ft.colors.BLUE_200)
-
-                def on_port(port, status, service, banner):
-                    color = ft.colors.GREEN_ACCENT if status == "OPEN" else ft.colors.ORANGE_400
-                    table.rows.append(ft.DataRow(cells=[
-                        ft.DataCell(ft.Text(str(port))), 
-                        ft.DataCell(ft.Text(status, color=color)), 
-                        ft.DataCell(ft.Text(f"{service} | {banner}"))
-                    ]))
-                    print_cli(f"  [+] {port:<5}/tcp | {status:<8} | {service}", color)
-                    page.update()
-
-                def run():
-                    res = ScanEngine.stealth_syn_scan(target, ports, on_port) if is_stealth else ScanEngine.port_scan(target, ports, on_port)
-                    page.client_storage.set("port_data", res)
-                    progress.visible = False
-                    page.update()
-
-                threading.Thread(target=run, daemon=True).start()
-
-            return ft.Column([
-                ft.Text("Active Network Probing", size=22, weight="bold"),
-                ft.Row([target_input, ports_input, profile_dropdown]),
-                ft.Row([
-                    ft.ElevatedButton("Engage Target", on_click=start_scan), 
-                    ft.ElevatedButton("Export PDF", on_click=export_active_pdf, icon=ft.icons.PICTURE_AS_PDF, icon_color=ft.colors.RED_400), 
-                    progress
-                ]),
-                status_text, ft.Divider(), ft.ListView([table], expand=True, auto_scroll=True)
-            ], expand=True)
-
-        # ----------------------------------------------------
-        # VIEW 2: SIEM REAL-TIME MONITORING
-        # ----------------------------------------------------
-        def monitor_view():
-            target_input = ft.TextField(label="Target to Monitor", value="127.0.0.1", expand=True)
-            interval_input = ft.TextField(label="Interval (Seconds)", value="10", width=150)
-            monitor_status = ft.Text("Status: Idle", color=ft.colors.GREY_400)
-            log_list = ft.ListView(expand=True, auto_scroll=True, spacing=5)
+            # ----------------------------------------------------
+            # EMBEDDED CLI TERMINAL (Right Side Panel)
+            # ----------------------------------------------------
+            cli_output = ft.ListView(expand=True, auto_scroll=True, spacing=2)
             
-            is_monitoring = False
-            last_state = {}
-
-            def toggle_monitor(e):
-                nonlocal is_monitoring, last_state
-                if is_monitoring:
-                    is_monitoring = False
-                    e.control.text = "Start Monitoring"
-                    monitor_status.value, monitor_status.color = "Status: Idle", ft.colors.GREY_400
-                else:
-                    is_monitoring = True
-                    last_state = {}
-                    e.control.text = "Stop Monitoring"
-                    monitor_status.value, monitor_status.color = "Status: ACTIVE MONITORING", ft.colors.GREEN_ACCENT
-                    threading.Thread(target=monitor_loop, daemon=True).start()
+            def print_cli(text, color=ft.colors.WHITE):
+                cli_output.controls.append(ft.Text(text, color=color, font_family="Consolas", size=12))
                 page.update()
 
-            def monitor_loop():
-                nonlocal last_state
-                target = target_input.value
+            def execute_cli_command(e):
+                cmd_str = cli_input.value.strip()
+                if not cmd_str: return
+                print_cli(f"PS> {cmd_str}", ft.colors.BLUE_200)
+                cli_input.value = ""
+                page.update()
+
                 try: 
-                    interval = int(interval_input.value)
-                except Exception: 
-                    interval = 10
+                    args = shlex.split(cmd_str)
+                except ValueError:
+                    print_cli("[-] Error parsing command.", ft.colors.RED_400)
+                    return
 
-                while is_monitoring:
-                    # Scan common critical ports
-                    current_scan = ScanEngine.port_scan(target, [21,22,80,443,3306,3389,8080], workers=10)
-                    current_state = {str(p["port"]): p["status"] for p in current_scan if "port" in p}
-                    timestamp = datetime.now().strftime("%H:%M:%S")
-                    
-                    if last_state:
-                        # Compare against previous loop state to find anomalies
-                        for port, status in current_state.items():
-                            old_status = last_state.get(port, "CLOSED")
-                            if status != old_status:
-                                msg = f"[{timestamp}] ALERT: Port {port} changed from {old_status} -> {status}"
-                                log_list.controls.append(ft.Text(msg, color=ft.colors.RED_400, weight="bold"))
-                                print_cli(f"SIEM ALERT: {msg}", ft.colors.RED_400)
-                    else:
-                        log_list.controls.append(ft.Text(f"[{timestamp}] Baseline established.", color=ft.colors.BLUE_200))
-                    
-                    last_state = current_state
+                command = args[0].lower()
+                if command == "clear": 
+                    cli_output.controls.clear()
                     page.update()
-                    time.sleep(interval)
+                else: 
+                    print_cli(f"[*] Command executed: {command}. Check GUI for sync.", ft.colors.GREY_500)
 
-            return ft.Column([
-                ft.Text("Real-Time SIEM Monitoring", size=22, weight="bold"),
-                ft.Row([target_input, interval_input, ft.ElevatedButton("Start Monitoring", on_click=toggle_monitor)]),
-                monitor_status, ft.Divider(), log_list
-            ], expand=True)
+            cli_input = ft.TextField(
+                hint_text="Terminal...", bgcolor=ft.colors.BLACK, color=ft.colors.GREEN_ACCENT_400, 
+                text_style=ft.TextStyle(font_family="Consolas"), on_submit=execute_cli_command
+            )
+            
+            cli_area = ft.Container(
+                expand=4, bgcolor="#0A0A0A", padding=10, border_radius=10, border=ft.border.all(1, ft.colors.GREY_800),
+                content=ft.Column([
+                    ft.Row([
+                        ft.Icon(ft.icons.TERMINAL, color=ft.colors.WHITE), 
+                        ft.Text("Embedded Terminal", weight="bold", font_family="Consolas", expand=True)
+                    ]),
+                    ft.Divider(color=ft.colors.GREY_800), cli_output, cli_input
+                ])
+            )
 
-        # ----------------------------------------------------
-        # VIEW 3: PASSIVE RECONNAISSANCE 
-        # ----------------------------------------------------
-        def passive_recon_view():
-            target_input = ft.TextField(label="Target Domain", value="example.com", expand=True)
-            results_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
-            progress = ft.ProgressRing(visible=False, width=20, height=20)
+            # --- BOILERPLATE HEADER ---
+            def load_boilerplate():
+                is_elevated = "ELEVATED" if check_privileges()[1] else "STANDARD"
+                print_cli("╔══════════════════════════════════════════════════════════════════╗", ft.colors.GREEN_ACCENT)
+                print_cli("║                   SOLOSCAN SECURITY SUITE PRO                    ║", ft.colors.GREEN_ACCENT)
+                print_cli("║             Developed by: GarbaTheAnalyst Consultancy            ║", ft.colors.GREEN_ACCENT)
+                print_cli("╚══════════════════════════════════════════════════════════════════╝", ft.colors.GREEN_ACCENT)
+                print_cli(f"[*] System Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ft.colors.BLUE_200)
+                print_cli(f"[*] OS Kernel: {platform.system()} {platform.release()}", ft.colors.BLUE_200)
+                print_cli(f"[*] Privileges: {is_elevated}", ft.colors.BLUE_200)
+                print_cli("[*] Environment: Ready for Reconnaissance & Defense", ft.colors.GREEN_ACCENT)
+                print_cli("-" * 68)
+                print_cli("Type 'help' for command list.", ft.colors.GREY_500)
 
-            def export_passive_pdf(e):
-                data = page.client_storage.get("passive_data")
-                if data:
-                    path = generate_pdf_report(data, title="Passive OSINT Report", filename="Passive_OSINT")
-                    page.snack_bar = ft.SnackBar(ft.Text(f"PDF Saved: {path}"))
-                    page.snack_bar.open = True
-                    print_cli(f"[*] Exported Passive PDF to {path}", ft.colors.GREEN_ACCENT)
-                page.update()
+            load_boilerplate()
 
-            def start_osint(e):
-                results_list.controls.clear()
-                progress.visible = True
-                page.update()
+            # ----------------------------------------------------
+            # VIEW 1: ACTIVE RECONNAISSANCE 
+            # ----------------------------------------------------
+            def active_recon_view():
+                target_input = ft.TextField(label="Target IP / Domain", value="127.0.0.1", expand=True)
+                ports_input = ft.TextField(label="Ports (e.g. 22,80,1-1000)", value="22,80,443", width=200)
+                profile_dropdown = ft.Dropdown(
+                    label="Scan Profile", options=[ft.dropdown.Option(k) for k in SCAN_MODES.keys()], 
+                    value="Standard (TCP Connect)", width=250
+                )
+                progress = ft.ProgressRing(visible=False, width=20, height=20)
+                status_text = ft.Text("")
+                table = ft.DataTable(columns=[
+                    ft.DataColumn(ft.Text("Port")), ft.DataColumn(ft.Text("Status")), ft.DataColumn(ft.Text("Service/Banner"))
+                ], rows=[])
+
+                def export_active_pdf(e):
+                    data = page.client_storage.get("port_data")
+                    if not data:
+                        status_text.value = "No data to export."; page.update(); return
+                    path = generate_pdf_report(data, title="Active Scan Report", filename="Active_Scan")
+                    status_text.value = f"PDF Saved: {path}" if path else "PDF Export Failed."
+                    print_cli(f"[*] Exported Active Scan PDF to {path}", ft.colors.GREEN_ACCENT)
+                    page.update()
+
+                def start_scan(e):
+                    table.rows.clear(); progress.visible = True; page.update()
+                    target = target_input.value
+                    is_stealth = SCAN_MODES[profile_dropdown.value]["stealth"]
+
+                    try:
+                        ports = []
+                        for part in ports_input.value.split(","):
+                            part = part.strip()
+                            if "-" in part:
+                                start, end = map(int, part.split("-"))
+                                ports.extend(range(start, end + 1))
+                            else: ports.append(int(part))
+                        ports = sorted(list(set(ports)))
+                    except Exception:
+                        progress.visible = False; status_text.value = "Invalid Ports Format"; page.update(); return
+
+                    print_cli(f"PS> scan {target} {len(ports)} ports", ft.colors.BLUE_200)
+
+                    def on_port(port, status, service, banner):
+                        color = ft.colors.GREEN_ACCENT if status == "OPEN" else ft.colors.ORANGE_400
+                        table.rows.append(ft.DataRow(cells=[
+                            ft.DataCell(ft.Text(str(port))), ft.DataCell(ft.Text(status, color=color)), ft.DataCell(ft.Text(f"{service} | {banner}"))
+                        ]))
+                        print_cli(f"  [+] {port:<5}/tcp | {status:<8} | {service}", color)
+                        page.update()
+
+                    def run():
+                        res = ScanEngine.stealth_syn_scan(target, ports, on_port) if is_stealth else ScanEngine.port_scan(target, ports, on_port)
+                        page.client_storage.set("port_data", res)
+                        progress.visible = False; page.update()
+
+                    threading.Thread(target=run, daemon=True).start()
+
+                return ft.Column([
+                    ft.Text("Active Network Probing", size=22, weight="bold"),
+                    ft.Row([target_input, ports_input, profile_dropdown]),
+                    ft.Row([ft.ElevatedButton("Engage Target", on_click=start_scan), ft.ElevatedButton("Export PDF", on_click=export_active_pdf, icon=ft.icons.PICTURE_AS_PDF, icon_color=ft.colors.RED_400), progress]),
+                    status_text, ft.Divider(), ft.ListView([table], expand=True, auto_scroll=True)
+                ], expand=True)
+
+            # ----------------------------------------------------
+            # VIEW 2: SIEM REAL-TIME MONITORING
+            # ----------------------------------------------------
+            def monitor_view():
+                target_input = ft.TextField(label="Target to Monitor", value="127.0.0.1", expand=True)
+                interval_input = ft.TextField(label="Interval (Seconds)", value="10", width=150)
+                monitor_status = ft.Text("Status: Idle", color=ft.colors.GREY_400)
+                log_list = ft.ListView(expand=True, auto_scroll=True, spacing=5)
                 
-                target = target_input.value
-                print_cli(f"PS> osint {target}", ft.colors.BLUE_200)
+                is_monitoring = False; last_state = {}
 
-                def run():
-                    export_data = []
-                    
-                    whois = PassiveEngine.get_whois(target)
-                    export_data.append({"WHOIS": whois})
-                    results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
-                        ft.Text("WHOIS Registry", weight="bold", color=ft.colors.BLUE_200), 
-                        ft.Text(whois[:300] + "...", size=12)
-                    ]))))
-                    
-                    subs = PassiveEngine.get_subdomains(target)
-                    if subs:
-                        export_data.append({"Subdomains": subs})
+                def toggle_monitor(e):
+                    nonlocal is_monitoring, last_state
+                    if is_monitoring:
+                        is_monitoring = False
+                        e.control.text, monitor_status.value, monitor_status.color = "Start Monitoring", "Status: Idle", ft.colors.GREY_400
+                    else:
+                        is_monitoring = True; last_state = {}
+                        e.control.text, monitor_status.value, monitor_status.color = "Stop Monitoring", "Status: ACTIVE MONITORING", ft.colors.GREEN_ACCENT
+                        threading.Thread(target=monitor_loop, daemon=True).start()
+                    page.update()
+
+                def monitor_loop():
+                    nonlocal last_state
+                    target = target_input.value
+                    try: interval = int(interval_input.value)
+                    except Exception: interval = 10
+
+                    while is_monitoring:
+                        current_scan = ScanEngine.port_scan(target, [21,22,80,443,3306,3389,8080], workers=10)
+                        current_state = {str(p["port"]): p["status"] for p in current_scan if "port" in p}
+                        timestamp = datetime.now().strftime("%H:%M:%S")
+                        
+                        if last_state:
+                            for port, status in current_state.items():
+                                old_status = last_state.get(port, "CLOSED")
+                                if status != old_status:
+                                    msg = f"[{timestamp}] ALERT: Port {port} changed from {old_status} -> {status}"
+                                    log_list.controls.append(ft.Text(msg, color=ft.colors.RED_400, weight="bold"))
+                                    print_cli(f"SIEM ALERT: {msg}", ft.colors.RED_400)
+                        else:
+                            log_list.controls.append(ft.Text(f"[{timestamp}] Baseline established.", color=ft.colors.BLUE_200))
+                        
+                        last_state = current_state; page.update(); time.sleep(interval)
+
+                return ft.Column([
+                    ft.Text("Real-Time SIEM Monitoring", size=22, weight="bold"),
+                    ft.Row([target_input, interval_input, ft.ElevatedButton("Start Monitoring", on_click=toggle_monitor)]),
+                    monitor_status, ft.Divider(), log_list
+                ], expand=True)
+
+            # ----------------------------------------------------
+            # VIEW 3: PASSIVE RECONNAISSANCE 
+            # ----------------------------------------------------
+            def passive_recon_view():
+                target_input = ft.TextField(label="Target Domain", value="example.com", expand=True)
+                results_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+                progress = ft.ProgressRing(visible=False, width=20, height=20)
+
+                def export_passive_pdf(e):
+                    data = page.client_storage.get("passive_data")
+                    if data:
+                        path = generate_pdf_report(data, title="Passive OSINT Report", filename="Passive_OSINT")
+                        page.snack_bar = ft.SnackBar(ft.Text(f"PDF Saved: {path}")); page.snack_bar.open = True
+                        print_cli(f"[*] Exported Passive PDF to {path}", ft.colors.GREEN_ACCENT)
+                    page.update()
+
+                def start_osint(e):
+                    results_list.controls.clear(); progress.visible = True; page.update()
+                    target = target_input.value
+                    print_cli(f"PS> osint {target}", ft.colors.BLUE_200)
+
+                    def run():
+                        export_data = []
+                        whois = PassiveEngine.get_whois(target)
+                        export_data.append({"WHOIS": whois})
                         results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
-                            ft.Text("Subdomains", weight="bold", color=ft.colors.BLUE_200), 
-                            ft.Text("\n".join(subs), size=12)
+                            ft.Text("WHOIS Registry", weight="bold", color=ft.colors.BLUE_200), ft.Text(whois[:300] + "...", size=12)
                         ]))))
                         
-                    fuzz = WebVulnScanner.fuzz_directories(target)
-                    if fuzz:
-                        export_data.append({"Fuzzing Hits": fuzz})
-                        fuzz_text = "\n".join([f"{f['path']} ({f['status']})" for f in fuzz])
-                        results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
-                            ft.Text("Fuzzing Hits", weight="bold", color=ft.colors.RED_300), 
-                            ft.Text(fuzz_text, color=ft.colors.GREEN_ACCENT)
-                        ]))))
-                    
-                    page.client_storage.set("passive_data", export_data)
-                    progress.visible = False
+                        subs = PassiveEngine.get_subdomains(target)
+                        if subs:
+                            export_data.append({"Subdomains": subs})
+                            results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                ft.Text("Subdomains", weight="bold", color=ft.colors.BLUE_200), ft.Text("\n".join(subs), size=12)
+                            ]))))
+                            
+                        fuzz = WebVulnScanner.fuzz_directories(target)
+                        if fuzz:
+                            export_data.append({"Fuzzing Hits": fuzz})
+                            fuzz_text = "\n".join([f"{f['path']} ({f['status']})" for f in fuzz])
+                            results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                ft.Text("Fuzzing Hits", weight="bold", color=ft.colors.RED_300), ft.Text(fuzz_text, color=ft.colors.GREEN_ACCENT)
+                            ]))))
+                        
+                        page.client_storage.set("passive_data", export_data)
+                        progress.visible = False; page.update()
+                        
+                    threading.Thread(target=run, daemon=True).start()
+
+                return ft.Column([
+                    ft.Text("Passive OSINT & Fuzzing", size=22, weight="bold"),
+                    ft.Row([target_input, ft.ElevatedButton("Run Full OSINT", on_click=start_osint), ft.ElevatedButton("Export PDF", on_click=export_passive_pdf, icon=ft.icons.PICTURE_AS_PDF, icon_color=ft.colors.RED_400), progress]),
+                    ft.Divider(), results_list
+                ], expand=True)
+
+            # ----------------------------------------------------
+            # VIEW 4: BLUE TEAM DEFENSE
+            # ----------------------------------------------------
+            def defense_view():
+                current_ip = IPManager.get_current_ip()
+                adapter_input = ft.TextField(label="Windows Adapter (e.g. Wi-Fi)", width=250)
+                new_ip_input = ft.TextField(label="New Static IP", width=150)
+                ip_status = ft.Text("")
+
+                def update_ip(e):
+                    ip_status.value = "Attempting to change IP (Requires Admin)..."; page.update()
+                    res = IPManager.change_windows_ip(adapter_input.value, new_ip_input.value)
+                    ip_status.value = res
+                    ip_status.color = ft.colors.GREEN_ACCENT if "Success" in res else ft.colors.RED_400
                     page.update()
-                    
-                threading.Thread(target=run, daemon=True).start()
 
-            return ft.Column([
-                ft.Text("Passive OSINT & Fuzzing", size=22, weight="bold"),
-                ft.Row([
-                    target_input, 
-                    ft.ElevatedButton("Run Full OSINT", on_click=start_osint), 
-                    ft.ElevatedButton("Export PDF", on_click=export_passive_pdf, icon=ft.icons.PICTURE_AS_PDF, icon_color=ft.colors.RED_400), 
-                    progress
-                ]),
-                ft.Divider(), results_list
-            ], expand=True)
+                hp_port_input = ft.TextField(label="Honeypot Port", value="22", width=120)
+                hp_status = ft.Text("Status: Offline", color=ft.colors.GREY_400)
+                hp_logs = ft.ListView(expand=True, auto_scroll=True, spacing=5)
 
-        # ----------------------------------------------------
-        # VIEW 4: BLUE TEAM DEFENSE
-        # ----------------------------------------------------
-        def defense_view():
-            current_ip = IPManager.get_current_ip()
-            adapter_input = ft.TextField(label="Windows Adapter (e.g. Wi-Fi)", width=250)
-            new_ip_input = ft.TextField(label="New Static IP", width=150)
-            ip_status = ft.Text("")
+                def hp_logger(msg):
+                    color = ft.colors.RED_400 if "INTRUSION" in msg else ft.colors.GREEN_ACCENT
+                    hp_logs.controls.append(ft.Text(msg, color=color)); print_cli(f"HONEYPOT: {msg}", color); page.update()
 
-            def update_ip(e):
-                ip_status.value = "Attempting to change IP (Requires Admin)..."
+                def toggle_honeypot(e):
+                    if global_honeypot.is_active:
+                        global_honeypot.stop()
+                        e.control.text, e.control.bgcolor = "Deploy Honeypot", ft.colors.BLUE_700
+                        hp_status.value, hp_status.color = "Status: Offline", ft.colors.GREY_400
+                    else:
+                        global_honeypot.port = int(hp_port_input.value)
+                        if global_honeypot.start(hp_logger):
+                            e.control.text, e.control.bgcolor = "Deactivate Honeypot", ft.colors.RED_700
+                            hp_status.value, hp_status.color = "Status: ACTIVE", ft.colors.GREEN_ACCENT
+                    page.update()
+
+                return ft.Column([
+                    ft.Text("Blue Team Defense Tools", size=22, weight="bold"), ft.Divider(),
+                    ft.Text("Host Network Management", weight="bold", color=ft.colors.BLUE_200),
+                    ft.Text(f"Current Local IP Address: {current_ip}", size=16, color=ft.colors.GREEN_ACCENT),
+                    ft.Row([adapter_input, new_ip_input, ft.ElevatedButton("Change IP", on_click=update_ip)]), ip_status,
+                    ft.Container(height=20), ft.Divider(),
+                    ft.Text("Intrusion Detection Honeypot", weight="bold", color=ft.colors.BLUE_200),
+                    ft.Text("Deploys a fake service to log unauthorized network scans against your machine.", color=ft.colors.GREY_400),
+                    ft.Row([hp_port_input, ft.ElevatedButton("Deploy Honeypot", on_click=toggle_honeypot, bgcolor=ft.colors.BLUE_700)]), hp_status,
+                    ft.Container(hp_logs, expand=True, border=ft.border.all(1, ft.colors.GREY_800), padding=10, border_radius=5)
+                ], expand=True)
+
+            # ----------------------------------------------------
+            # VIEW 5: IDS PACKET SNIFFER
+            # ----------------------------------------------------
+            def sniffer_view():
+                log_list = ft.ListView(expand=True, auto_scroll=True, spacing=2)
+                status_text = ft.Text("Sniffer Offline", color=ft.colors.GREY_400)
+                
+                def map_color(color_str):
+                    colors = {"WHITE": ft.colors.WHITE, "RED": ft.colors.RED_400, "GREEN": ft.colors.GREEN_ACCENT, "ORANGE": ft.colors.ORANGE_400, "GREY": ft.colors.GREY_500}
+                    return colors.get(color_str, ft.colors.WHITE)
+
+                def sniffer_log(msg, color_str="WHITE"):
+                    log_list.controls.append(ft.Text(msg, color=map_color(color_str), font_family="Consolas", size=12))
+                    if len(log_list.controls) > 500: log_list.controls.pop(0) 
+                    page.update()
+
+                def toggle_sniffer(e):
+                    if sniffer_instance.running:
+                        sniffer_instance.stop()
+                        e.control.text, e.control.icon, e.control.bgcolor = "Start Sniffing", ft.icons.PLAY_ARROW, ft.colors.SURFACE_VARIANT
+                        status_text.value, status_text.color = "Sniffer Offline", ft.colors.GREY_400
+                    else:
+                        log_list.controls.clear()
+                        e.control.text, e.control.icon, e.control.bgcolor = "Stop Sniffing", ft.icons.STOP, ft.colors.RED_900
+                        status_text.value, status_text.color = "ACTIVE - Capturing Traffic...", ft.colors.GREEN_ACCENT
+                        threading.Thread(target=sniffer_instance.start, args=(sniffer_log,), daemon=True).start()
+                    page.update()
+
+                return ft.Column([
+                    ft.Text("Intrusion Detection Sniffer", size=22, weight="bold"),
+                    ft.Text("Monitors local interfaces for suspicious traffic and MITRE ATT&CK patterns.", color=ft.colors.GREY_400),
+                    ft.Row([ft.ElevatedButton("Start Sniffing", icon=ft.icons.PLAY_ARROW, on_click=toggle_sniffer), status_text]), ft.Divider(),
+                    ft.Container(log_list, expand=True, bgcolor="#0A0A0A", padding=10, border_radius=5, border=ft.border.all(1, ft.colors.GREY_800))
+                ], expand=True)
+
+            # ----------------------------------------------------
+            # VIEW 6: TOOLS & AUDIT LOGS
+            # ----------------------------------------------------
+            def tools_view():
+                resolve_input = ft.TextField(label="Domain/URL to Resolve", value="google.com", expand=True)
+                resolve_output = ft.Text("")
+
+                def do_resolve(e):
+                    clean = resolve_input.value.replace("https://", "").replace("http://", "").split("/")[0]
+                    print_cli(f"PS> resolve {clean}", ft.colors.BLUE_200)
+                    try:
+                        ip = socket.gethostbyname(clean)
+                        resolve_output.value, resolve_output.color = f"Target {clean} resolves to IP: {ip}", ft.colors.GREEN_ACCENT
+                        print_cli(f"[+] {clean} -> {ip}", ft.colors.GREEN_ACCENT)
+                    except Exception:
+                        resolve_output.value, resolve_output.color = f"Failed to resolve {clean}.", ft.colors.RED_400
+                        print_cli(f"[-] Failed to resolve {clean}.", ft.colors.RED_400)
+                    page.update()
+
+                ip_input = ft.TextField(label="CIDR Network Range (e.g. 192.168.1.0/24)", expand=True)
+                output_col = ft.Column(spacing=8)
+
+                def calculate(e):
+                    output_col.controls.clear()
+                    try:
+                        net = ipaddress.ip_network(ip_input.value, strict=False)
+                        hosts = list(net.hosts())
+                        first, last = (hosts[0], hosts[-1]) if hosts else ("N/A", "N/A")
+                        usable = net.num_addresses - 2 if net.num_addresses > 2 else 0
+                        output_col.controls = [
+                            ft.Text(f"Network Address: {net.network_address}"), ft.Text(f"Broadcast: {net.broadcast_address}"),
+                            ft.Text(f"Netmask: {net.netmask}"), ft.Text(f"Usable Hosts: {usable}", color=ft.colors.BLUE_200),
+                            ft.Text(f"Host Range: {first} -> {last}")
+                        ]
+                    except Exception as ex:
+                        output_col.controls.append(ft.Text(f"Error: {ex}", color=ft.colors.RED_400))
+                    page.update()
+
+                log_display = ft.Text("Click 'Refresh Logs' to load system events.", font_family="Consolas", size=12, color=ft.colors.GREY_400)
+                
+                def refresh_audit_logs(e):
+                    try:
+                        with open("soloscan_debug.log", "r") as f:
+                            lines = f.readlines()[-15:]
+                            log_display.value, log_display.color = "".join(lines) if lines else "Log file is empty.", ft.colors.GREEN_ACCENT
+                    except FileNotFoundError:
+                        log_display.value, log_display.color = "soloscan_debug.log not found. System has not generated background logs yet.", ft.colors.ORANGE_400
+                    page.update()
+
+                return ft.Column([
+                    ft.Text("Networking Utilities & System Audit", size=22, weight="bold"), ft.Divider(),
+                    ft.Text("Domain-to-IP Resolver", weight="bold", color=ft.colors.BLUE_200),
+                    ft.Row([resolve_input, ft.ElevatedButton("Resolve IP", on_click=do_resolve)]), resolve_output,
+                    ft.Container(height=10), ft.Divider(),
+                    ft.Text("Subnet Calculator", weight="bold", color=ft.colors.BLUE_200),
+                    ft.Row([ip_input, ft.ElevatedButton("Compute Subnet", on_click=calculate)]), output_col,
+                    ft.Container(height=10), ft.Divider(),
+                    ft.Row([ft.Text("Background System Audit Logs", weight="bold", color=ft.colors.BLUE_200), ft.IconButton(icon=ft.icons.REFRESH, on_click=refresh_audit_logs, tooltip="Refresh Logs")]),
+                    ft.Container(log_display, expand=True, bgcolor="#0A0A0A", padding=10, border_radius=5, border=ft.border.all(1, ft.colors.GREY_800))
+                ], expand=True)
+
+            # ----------------------------------------------------
+            # GLOBAL NAVIGATION & FRAME ASSEMBLY
+            # ----------------------------------------------------
+            def navigation_handler(e):
+                index = e.control.selected_index
+                views = [active_recon_view(), monitor_view(), passive_recon_view(), defense_view(), sniffer_view(), tools_view()]
+                gui_area.content = views[index]
                 page.update()
-                res = IPManager.change_windows_ip(adapter_input.value, new_ip_input.value)
-                ip_status.value = res
-                ip_status.color = ft.colors.GREEN_ACCENT if "Success" in res else ft.colors.RED_400
-                page.update()
 
-            hp_port_input = ft.TextField(label="Honeypot Port", value="22", width=120)
-            hp_status = ft.Text("Status: Offline", color=ft.colors.GREY_400)
-            hp_logs = ft.ListView(expand=True, auto_scroll=True, spacing=5)
-
-            def hp_logger(msg):
-                color = ft.colors.RED_400 if "INTRUSION" in msg else ft.colors.GREEN_ACCENT
-                hp_logs.controls.append(ft.Text(msg, color=color))
-                print_cli(f"HONEYPOT: {msg}", color)
-                page.update()
-
-            def toggle_honeypot(e):
-                if global_honeypot.is_active:
-                    global_honeypot.stop()
-                    e.control.text = "Deploy Honeypot"
-                    e.control.bgcolor = ft.colors.BLUE_700
-                    hp_status.value, hp_status.color = "Status: Offline", ft.colors.GREY_400
-                else:
-                    global_honeypot.port = int(hp_port_input.value)
-                    if global_honeypot.start(hp_logger):
-                        e.control.text = "Deactivate Honeypot"
-                        e.control.bgcolor = ft.colors.RED_700
-                        hp_status.value, hp_status.color = "Status: ACTIVE", ft.colors.GREEN_ACCENT
-                page.update()
-
-            return ft.Column([
-                ft.Text("Blue Team Defense Tools", size=22, weight="bold"), ft.Divider(),
-                ft.Text("Host Network Management", weight="bold", color=ft.colors.BLUE_200),
-                ft.Text(f"Current Local IP Address: {current_ip}", size=16, color=ft.colors.GREEN_ACCENT),
-                ft.Row([adapter_input, new_ip_input, ft.ElevatedButton("Change IP", on_click=update_ip)]), ip_status,
-                ft.Container(height=20), ft.Divider(),
-                ft.Text("Intrusion Detection Honeypot", weight="bold", color=ft.colors.BLUE_200),
-                ft.Text("Deploys a fake service to log unauthorized network scans against your machine.", color=ft.colors.GREY_400),
-                ft.Row([hp_port_input, ft.ElevatedButton("Deploy Honeypot", on_click=toggle_honeypot, bgcolor=ft.colors.BLUE_700)]), hp_status,
-                ft.Container(hp_logs, expand=True, border=ft.border.all(1, ft.colors.GREY_800), padding=10, border_radius=5)
-            ], expand=True)
-
-        # ----------------------------------------------------
-        # VIEW 5: IDS PACKET SNIFFER
-        # ----------------------------------------------------
-        def sniffer_view():
-            log_list = ft.ListView(expand=True, auto_scroll=True, spacing=2)
-            status_text = ft.Text("Sniffer Offline", color=ft.colors.GREY_400)
+            nav_rail = ft.NavigationRail(
+                selected_index=0, label_type=ft.NavigationRailLabelType.ALL, min_width=80,
+                destinations=[
+                    ft.NavigationRailDestination(icon=ft.icons.BOLT, label="Active"),
+                    ft.NavigationRailDestination(icon=ft.icons.MONITOR_HEART, label="SIEM"),
+                    ft.NavigationRailDestination(icon=ft.icons.RADAR, label="Passive"),
+                    ft.NavigationRailDestination(icon=ft.icons.SHIELD, label="Defense"),
+                    ft.NavigationRailDestination(icon=ft.icons.WAVES, label="Sniffer"),
+                    ft.NavigationRailDestination(icon=ft.icons.BUILD, label="Tools"),
+                ],
+                on_change=navigation_handler,
+            )
             
-            def map_color(color_str):
-                colors = {"WHITE": ft.colors.WHITE, "RED": ft.colors.RED_400, "GREEN": ft.colors.GREEN_ACCENT, "ORANGE": ft.colors.ORANGE_400, "GREY": ft.colors.GREY_500}
-                return colors.get(color_str, ft.colors.WHITE)
+            gui_area.content = active_recon_view()
+            div1, div2 = ft.VerticalDivider(width=1), ft.VerticalDivider(width=1)
 
-            def sniffer_log(msg, color_str="WHITE"):
-                log_list.controls.append(ft.Text(msg, color=map_color(color_str), font_family="Consolas", size=12))
-                # Prune list to prevent GUI memory lag
-                if len(log_list.controls) > 500: log_list.controls.pop(0) 
+            def set_view_mode(mode):
+                if mode == "Split View":
+                    nav_rail.visible, div1.visible, gui_area.visible, div2.visible, cli_area.visible = True, True, True, True, True
+                elif mode == "GUI Only":
+                    nav_rail.visible, div1.visible, gui_area.visible = True, True, True
+                    cli_area.visible, div2.visible = False, False
+                elif mode == "CLI Only":
+                    nav_rail.visible, div1.visible, gui_area.visible, div2.visible = False, False, False, False
+                    cli_area.visible = True
                 page.update()
 
-            def toggle_sniffer(e):
-                if sniffer_instance.running:
-                    sniffer_instance.stop()
-                    e.control.text = "Start Sniffing"
-                    e.control.icon = ft.icons.PLAY_ARROW
-                    e.control.bgcolor = ft.colors.SURFACE_VARIANT
-                    status_text.value, status_text.color = "Sniffer Offline", ft.colors.GREY_400
-                else:
-                    log_list.controls.clear()
-                    e.control.text = "Stop Sniffing"
-                    e.control.icon = ft.icons.STOP
-                    e.control.bgcolor = ft.colors.RED_900
-                    status_text.value, status_text.color = "ACTIVE - Capturing Traffic...", ft.colors.GREEN_ACCENT
-                    # Run sniffer loop on background thread to prevent GUI lockup
-                    threading.Thread(target=sniffer_instance.start, args=(sniffer_log,), daemon=True).start()
-                page.update()
+            page.appbar = ft.AppBar(
+                title=ft.Row([ft.Icon(ft.icons.SECURITY, color=ft.colors.GREEN_ACCENT), ft.Text("SoloScan Workspace", weight="bold")]),
+                bgcolor=ft.colors.SURFACE_VARIANT,
+                actions=[
+                    ft.TextButton("GUI Only", on_click=lambda e: set_view_mode("GUI Only")),
+                    ft.TextButton("CLI Only", on_click=lambda e: set_view_mode("CLI Only")),
+                    ft.TextButton("Split View", on_click=lambda e: set_view_mode("Split View")),
+                ],
+            )
 
-            return ft.Column([
-                ft.Text("Intrusion Detection Sniffer", size=22, weight="bold"),
-                ft.Text("Monitors local interfaces for suspicious traffic and MITRE ATT&CK patterns.", color=ft.colors.GREY_400),
-                ft.Row([ft.ElevatedButton("Start Sniffing", icon=ft.icons.PLAY_ARROW, on_click=toggle_sniffer), status_text]), ft.Divider(),
-                ft.Container(log_list, expand=True, bgcolor="#0A0A0A", padding=10, border_radius=5, border=ft.border.all(1, ft.colors.GREY_800))
-            ], expand=True)
+            # Assemble the Final UI
+            page.add(
+                ft.Column([
+                    ft.Row([nav_rail, div1, gui_area, div2, cli_area], expand=True),
+                    ft.Container(
+                        content=ft.Text("built by GarbaTheAnalyst, The Analyst Consultancy, ©2026. SoloScan™", size=10, color=ft.colors.GREY_600, italic=True),
+                        alignment=ft.alignment.bottom_right,
+                        padding=ft.padding.only(right=10, bottom=5)
+                    )
+                ], expand=True)
+            )
 
-        # ----------------------------------------------------
-        # VIEW 6: TOOLS & AUDIT LOGS
-        # ----------------------------------------------------
-        def tools_view():
-            # Domain-to-IP Resolver
-            resolve_input = ft.TextField(label="Domain/URL to Resolve", value="google.com", expand=True)
-            resolve_output = ft.Text("")
-
-            def do_resolve(e):
-                clean = resolve_input.value.replace("https://", "").replace("http://", "").split("/")[0]
-                print_cli(f"PS> resolve {clean}", ft.colors.BLUE_200)
-                try:
-                    ip = socket.gethostbyname(clean)
-                    resolve_output.value = f"Target {clean} resolves to IP: {ip}"
-                    resolve_output.color = ft.colors.GREEN_ACCENT
-                    print_cli(f"[+] {clean} -> {ip}", ft.colors.GREEN_ACCENT)
-                except Exception:
-                    resolve_output.value = f"Failed to resolve {clean}."
-                    resolve_output.color = ft.colors.RED_400
-                    print_cli(f"[-] Failed to resolve {clean}.", ft.colors.RED_400)
-                page.update()
-
-            # Subnet Calculator
-            ip_input = ft.TextField(label="CIDR Network Range (e.g. 192.168.1.0/24)", expand=True)
-            output_col = ft.Column(spacing=8)
-
-            def calculate(e):
-                output_col.controls.clear()
-                try:
-                    net = ipaddress.ip_network(ip_input.value, strict=False)
-                    hosts = list(net.hosts())
-                    first, last = (hosts[0], hosts[-1]) if hosts else ("N/A", "N/A")
-                    usable = net.num_addresses - 2 if net.num_addresses > 2 else 0
-                    output_col.controls = [
-                        ft.Text(f"Network Address: {net.network_address}"), 
-                        ft.Text(f"Broadcast: {net.broadcast_address}"),
-                        ft.Text(f"Netmask: {net.netmask}"), 
-                        ft.Text(f"Usable Hosts: {usable}", color=ft.colors.BLUE_200),
-                        ft.Text(f"Host Range: {first} -> {last}")
-                    ]
-                except Exception as ex:
-                    output_col.controls.append(ft.Text(f"Error: {ex}", color=ft.colors.RED_400))
-                page.update()
-
-            # SYSTEM AUDIT LOG VIEWER
-            log_display = ft.Text("Click 'Refresh Logs' to load system events.", font_family="Consolas", size=12, color=ft.colors.GREY_400)
-            
-            def refresh_audit_logs(e):
-                try:
-                    with open("soloscan_debug.log", "r") as f:
-                        # Grab the last 15 lines of the log file
-                        lines = f.readlines()[-15:]
-                        log_display.value = "".join(lines) if lines else "Log file is empty."
-                        log_display.color = ft.colors.GREEN_ACCENT
-                except FileNotFoundError:
-                    log_display.value = "soloscan_debug.log not found. System has not generated background logs yet."
-                    log_display.color = ft.colors.ORANGE_400
-                page.update()
-
-            return ft.Column([
-                ft.Text("Networking Utilities & System Audit", size=22, weight="bold"), ft.Divider(),
-                
-                ft.Text("Domain-to-IP Resolver", weight="bold", color=ft.colors.BLUE_200),
-                ft.Row([resolve_input, ft.ElevatedButton("Resolve IP", on_click=do_resolve)]), resolve_output,
-                
-                ft.Container(height=10), ft.Divider(),
-                
-                ft.Text("Subnet Calculator", weight="bold", color=ft.colors.BLUE_200),
-                ft.Row([ip_input, ft.ElevatedButton("Compute Subnet", on_click=calculate)]), output_col,
-                
-                ft.Container(height=10), ft.Divider(),
-                
-                # Render the Log Viewer
-                ft.Row([
-                    ft.Text("Background System Audit Logs", weight="bold", color=ft.colors.BLUE_200), 
-                    ft.IconButton(icon=ft.icons.REFRESH, on_click=refresh_audit_logs, tooltip="Refresh Logs")
-                ]),
-                ft.Container(log_display, expand=True, bgcolor="#0A0A0A", padding=10, border_radius=5, border=ft.border.all(1, ft.colors.GREY_800))
-            ], expand=True)
-
-        # ----------------------------------------------------
-        # GLOBAL NAVIGATION & FRAME ASSEMBLY
-        # ----------------------------------------------------
-        def navigation_handler(e):
-            """Swaps the center GUI view based on the sidebar selection."""
-            index = e.control.selected_index
-            views = [
-                active_recon_view(), 
-                monitor_view(), 
-                passive_recon_view(), 
-                defense_view(), 
-                sniffer_view(), 
-                tools_view()
-            ]
-            gui_area.content = views[index]
-            page.update()
-
-        nav_rail = ft.NavigationRail(
-            selected_index=0, 
-            label_type=ft.NavigationRailLabelType.ALL, 
-            min_width=80,
-            destinations=[
-                ft.NavigationRailDestination(icon=ft.icons.BOLT, label="Active"),
-                ft.NavigationRailDestination(icon=ft.icons.MONITOR_HEART, label="SIEM"),
-                ft.NavigationRailDestination(icon=ft.icons.RADAR, label="Passive"),
-                ft.NavigationRailDestination(icon=ft.icons.SHIELD, label="Defense"),
-                ft.NavigationRailDestination(icon=ft.icons.WAVES, label="Sniffer"),
-                ft.NavigationRailDestination(icon=ft.icons.BUILD, label="Tools"),
-            ],
-            on_change=navigation_handler,
-        )
-        
-        gui_area.content = active_recon_view()
-        div1 = ft.VerticalDivider(width=1)
-        div2 = ft.VerticalDivider(width=1)
-
-        def set_view_mode(mode):
-            """Toggles visibility of GUI/CLI panes via the top AppBar."""
-            if mode == "Split View":
-                nav_rail.visible, div1.visible, gui_area.visible, div2.visible, cli_area.visible = True, True, True, True, True
-            elif mode == "GUI Only":
-                nav_rail.visible, div1.visible, gui_area.visible = True, True, True
-                cli_area.visible, div2.visible = False, False
-            elif mode == "CLI Only":
-                nav_rail.visible, div1.visible, gui_area.visible, div2.visible = False, False, False, False
-                cli_area.visible = True
-            page.update()
-
-        # Add the application top bar
-        page.appbar = ft.AppBar(
-            title=ft.Row([ft.Icon(ft.icons.SECURITY, color=ft.colors.GREEN_ACCENT), ft.Text("SoloScan Workspace", weight="bold")]),
-            bgcolor=ft.colors.SURFACE_VARIANT,
-            actions=[
-                ft.TextButton("GUI Only", on_click=lambda e: set_view_mode("GUI Only")),
-                ft.TextButton("CLI Only", on_click=lambda e: set_view_mode("CLI Only")),
-                ft.TextButton("Split View", on_click=lambda e: set_view_mode("Split View")),
-            ],
-        )
-
-        # Add the main UI layout to the page (After splash screen clears)
-        page.add(
-            ft.Column([
-                ft.Row([nav_rail, div1, gui_area, div2, cli_area], expand=True),
-                # Developer custom footer
-                ft.Container(
-                    content=ft.Text("built by GarbaTheAnalyst, The Analyst Consultancy, ©2026. SoloScan™", size=10, color=ft.colors.GREY_600, italic=True),
-                    alignment=ft.alignment.bottom_right,
-                    padding=ft.padding.only(right=10, bottom=5)
-                )
-            ], expand=True)
-        )
+        # TRIGGER THE EULA SCREEN AFTER SPLASH
+        show_eula()
 
     ft.app(target=main)
