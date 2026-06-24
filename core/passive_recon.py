@@ -2,6 +2,11 @@ import socket
 import requests
 from core.utils import logger
 
+try:
+    from core.config import WHOISJSON_API_KEY
+except ImportError:
+    WHOISJSON_API_KEY = None
+
 class PassiveEngine:
     
     @staticmethod
@@ -42,11 +47,52 @@ class PassiveEngine:
     @staticmethod
     def get_whois(domain):
         clean_domain = domain.replace("https://", "").replace("http://", "").split("/")[0]
+
+        if not WHOISJSON_API_KEY:
+            return ("WHOIS error: No WhoisJSON API key configured. "
+                     "Copy core/config.py.example to core/config.py and add your key "
+                     "(get a free one at https://whoisjson.com/free-domain-api).")
+
         try:
-            r = requests.get(f"https://api.hackertarget.com/whois/?q={clean_domain}", timeout=10)
-            return r.text if r.text else "No WHOIS data found."
-        except Exception as e:
+            r = requests.get(
+                "https://whoisjson.com/api/v1/whois",
+                params={"domain": clean_domain},
+                headers={"Authorization": f"TOKEN={WHOISJSON_API_KEY}"},
+                timeout=10
+            )
+
+            if r.status_code == 401:
+                return "WHOIS error: Invalid or missing WhoisJSON API key (401 Unauthorized)."
+            if r.status_code == 429:
+                return "WHOIS error: WhoisJSON monthly quota or rate limit reached (429)."
+            if r.status_code != 200:
+                return f"WHOIS error: WhoisJSON returned status {r.status_code}: {r.text[:200]}"
+
+            data = r.json()
+
+            # Normalize the JSON response into the same kind of plain-text block the
+            # rest of the app (PDF export, GUI cards) already expects from get_whois().
+            lines = []
+            for key in ("domain", "registrar", "createdDate", "updatedDate", "expiresDate", "status", "dnssec"):
+                if data.get(key):
+                    lines.append(f"{key}: {data[key]}")
+
+            name_servers = data.get("nameServers") or data.get("nameservers")
+            if isinstance(name_servers, dict):
+                name_servers = name_servers.get("hostNames", [])
+            if name_servers:
+                lines.append(f"nameServers: {', '.join(str(ns) for ns in name_servers)}")
+
+            contact = data.get("registrant") or data.get("contacts")
+            if contact:
+                lines.append(f"registrant: {contact}")
+
+            return "\n".join(lines) if lines else (str(data) or "No WHOIS data found.")
+
+        except requests.exceptions.RequestException as e:
             return f"WHOIS error: {e}"
+        except ValueError:
+            return "WHOIS error: WhoisJSON returned a non-JSON response."
 
     @staticmethod
     def get_subdomains(domain):
