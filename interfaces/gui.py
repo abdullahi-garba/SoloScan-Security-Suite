@@ -15,6 +15,7 @@ from core.passive_recon import PassiveEngine
 from core.vuln_scanner import WebVulnScanner
 from core.defense import IPManager, Honeypot
 from core.sniffer import PacketSniffer
+from core.intel_engine import IntelEngine
 from core.utils import SCAN_MODES, export_results, generate_pdf_report, check_privileges
 
 def get_default_subnet():
@@ -167,10 +168,29 @@ def run_gui():
             # EMBEDDED CLI TERMINAL (Right Side Panel)
             # ----------------------------------------------------
             cli_output = ft.ListView(expand=True, auto_scroll=True, spacing=2)
-            
-            def print_cli(text, color=ft.colors.WHITE):
+
+            # Two append-only session transcripts: one for everything triggered from the
+            # GUI (buttons/forms), one for everything typed/run in the embedded terminal.
+            # Both are written live, line by line, so a crash never loses earlier output.
+            LOG_DIR = "logs"
+            _session_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            GUI_LOG_PATH = os.path.join(LOG_DIR, f"gui_session_{_session_ts}.txt")
+            CLI_LOG_PATH = os.path.join(LOG_DIR, f"cli_session_{_session_ts}.txt")
+
+            def _write_log_line(path, text):
+                try:
+                    os.makedirs(LOG_DIR, exist_ok=True)
+                    with open(path, "a", encoding="utf-8") as f:
+                        f.write(f"[{datetime.now().strftime('%H:%M:%S')}] {text}\n")
+                except Exception:
+                    pass  # logging failures should never break the UI
+
+            def print_cli(text, color=ft.colors.WHITE, source="GUI"):
                 cli_output.controls.append(ft.Text(text, color=color, font_family="Consolas", size=12, selectable=True))
                 page.update()
+                _write_log_line(GUI_LOG_PATH if source == "GUI" else CLI_LOG_PATH, text)
+
+            _base_print_cli = print_cli  # captured here (outer scope) so execute_cli_command can safely shadow the name below
 
             def parse_port_string(port_str):
                 """Shared port-range parser used by both the GUI scan form and the 'scan' terminal command."""
@@ -191,14 +211,14 @@ def run_gui():
                 # Only surface real alerts (RED/ORANGE) in the compact embedded terminal --
                 # routine per-packet traffic belongs on the dedicated Sniffer tab panel.
                 if color_str in ("RED", "ORANGE"):
-                    print_cli(f"SNIFFER: {msg}", ft.colors.RED_400 if color_str == "RED" else ft.colors.ORANGE_400)
+                    print_cli(f"SNIFFER: {msg}", ft.colors.RED_400 if color_str == "RED" else ft.colors.ORANGE_400, source="CLI")
 
             HELP_TEXT = {
                 "scan":        "scan <target> [ports] [--stealth]   Port scan. e.g. scan 192.168.1.5 22,80,1-100 --stealth",
                 "discover":    "discover [subnet]                   ARP-sweep a /24 for live hosts (defaults to your local subnet)",
                 "traceroute":  "traceroute <target>                 Trace the network hops to a target",
                 "bruteforce":  "bruteforce <target> [ftp|http]      Test default credentials against a service (default: ftp)",
-                "osint":       "osint <domain>                      Run the full passive OSINT pipeline",
+                "osint":       "osint <domain>                      Run the full passive OSINT + threat-intel pipeline",
                 "resolve":     "resolve <domain>                    Resolve a domain to an IP address",
                 "subnet":      "subnet <CIDR>                       Calculate network/broadcast/usable host range",
                 "whoami":      "whoami | ip                         Show this machine's current local IP",
@@ -214,12 +234,18 @@ def run_gui():
 
             def print_help(specific=None):
                 if specific and specific.lower() in HELP_TEXT:
-                    print_cli(HELP_TEXT[specific.lower()], ft.colors.GREEN_ACCENT); return
-                print_cli("Available commands:", ft.colors.BLUE_200)
+                    print_cli(HELP_TEXT[specific.lower()], ft.colors.GREEN_ACCENT, source="CLI"); return
+                print_cli("Available commands:", ft.colors.BLUE_200, source="CLI")
                 for line in HELP_TEXT.values():
-                    print_cli(f"  {line}", ft.colors.WHITE)
+                    print_cli(f"  {line}", ft.colors.WHITE, source="CLI")
 
             def execute_cli_command(e):
+                # Shadow print_cli for the whole rest of this function (and anything
+                # defined inside it, like the background run() closures) so every
+                # existing print_cli(...) call below is tagged CLI-sourced automatically.
+                def print_cli(text, color=ft.colors.WHITE):
+                    _base_print_cli(text, color, source="CLI")
+
                 cmd_str = cli_input.value.strip()
                 if not cmd_str: return
                 print_cli(f"PS> {cmd_str}", ft.colors.BLUE_200)
@@ -320,10 +346,37 @@ def run_gui():
                         def run():
                             dns_info = PassiveEngine.get_dns_records(target)
                             if "error" not in dns_info:
-                                print_cli(f"[+] DNS: {dns_info['Resolved IP']} (aliases: {dns_info['Known Aliases']})", ft.colors.GREEN_ACCENT)
-                                geo = PassiveEngine.get_ip_geolocation(dns_info["Resolved IP"])
+                                resolved_ip = dns_info["Resolved IP"]
+                                print_cli(f"[+] DNS: {resolved_ip} (aliases: {dns_info['Known Aliases']})", ft.colors.GREEN_ACCENT)
+                                geo = PassiveEngine.get_ip_geolocation(resolved_ip)
                                 if "error" not in geo:
                                     print_cli(f"[+] Geo: {geo.get('Country')}, {geo.get('City')} ({geo.get('ISP')})", ft.colors.GREEN_ACCENT)
+
+                                shodan = IntelEngine.query_shodan(resolved_ip)
+                                if "error" not in shodan:
+                                    print_cli(f"[+] Shodan: org={shodan['organization']} os={shodan['os']} CVEs={', '.join(shodan['vulnerabilities']) or 'none'}", ft.colors.RED_400 if shodan["vulnerabilities"] else ft.colors.GREEN_ACCENT)
+                                else:
+                                    print_cli(f"[-] Shodan: {shodan['error']}", ft.colors.GREY_500)
+
+                                for vt_label, vt_target, vt_type in (("IP", resolved_ip, "ip"), ("Domain", target, "domain")):
+                                    vt = IntelEngine.query_virustotal(vt_target, vt_type)
+                                    if "error" not in vt:
+                                        color = {"MALICIOUS": ft.colors.RED_400, "SUSPICIOUS": ft.colors.ORANGE_400, "CLEAN": ft.colors.GREEN_ACCENT}.get(vt["verdict"], ft.colors.WHITE)
+                                        print_cli(f"[+] VirusTotal ({vt_label}): {vt['verdict']} ({vt['malicious_hits']} malicious / {vt['suspicious_hits']} suspicious)", color)
+                                    else:
+                                        print_cli(f"[-] VirusTotal ({vt_label}): {vt['error']}", ft.colors.GREY_500)
+
+                                abuse = IntelEngine.query_abuseipdb(resolved_ip)
+                                if "error" not in abuse:
+                                    score = abuse["abuse_confidence_score"]
+                                    print_cli(f"[+] AbuseIPDB: {score}% confidence, {abuse['total_reports']} report(s)", ft.colors.RED_400 if score > 50 else (ft.colors.ORANGE_400 if score > 0 else ft.colors.GREEN_ACCENT))
+                                else:
+                                    print_cli(f"[-] AbuseIPDB: {abuse['error']}", ft.colors.GREY_500)
+
+                                reverse_ip = IntelEngine.query_hackertarget_reverse_ip(resolved_ip)
+                                hosted = reverse_ip.get("hosted_domains") if "error" not in reverse_ip else None
+                                if hosted:
+                                    print_cli(f"[+] Reverse IP: {len(hosted)} other domain(s) on {resolved_ip}", ft.colors.GREEN_ACCENT)
                             else:
                                 print_cli(f"[-] {dns_info['error']}", ft.colors.RED_400)
                             print_cli(f"[+] WHOIS: {PassiveEngine.get_whois(target)[:150]}...", ft.colors.GREEN_ACCENT)
@@ -480,7 +533,7 @@ def run_gui():
             # VIEW 1: ACTIVE RECONNAISSANCE 
             # ----------------------------------------------------
             def active_recon_view():
-                target_input = ft.TextField(label="Target IP / Domain", value="127.0.0.1", expand=True)
+                target_input = ft.TextField(label="Target IP / Domain", value="127.0.0.1", width=280)
                 ports_input = ft.TextField(label="Ports (e.g. 22,80,1-1000)", value="22,80,443", width=200)
                 profile_dropdown = ft.Dropdown(
                     label="Scan Profile", options=[ft.dropdown.Option(k) for k in SCAN_MODES.keys()], 
@@ -655,7 +708,7 @@ def run_gui():
             # VIEW 2: SIEM REAL-TIME MONITORING
             # ----------------------------------------------------
             def monitor_view():
-                target_input = ft.TextField(label="Target to Monitor", value="127.0.0.1", expand=True)
+                target_input = ft.TextField(label="Target to Monitor", value="127.0.0.1", width=280)
                 interval_input = ft.TextField(label="Interval (Seconds)", value="10", width=150)
                 monitor_status = ft.Text("Status: Idle", color=ft.colors.GREY_400)
                 log_list = ft.ListView(auto_scroll=True, spacing=5)
@@ -709,7 +762,7 @@ def run_gui():
             # VIEW 3: PASSIVE RECONNAISSANCE 
             # ----------------------------------------------------
             def passive_recon_view():
-                target_input = ft.TextField(label="Target Domain", value="example.com", expand=True)
+                target_input = ft.TextField(label="Target Domain", value="example.com", width=280)
                 results_list = ft.ListView(spacing=10, auto_scroll=True)
                 progress = ft.ProgressRing(visible=False, width=20, height=20)
 
@@ -738,6 +791,7 @@ def run_gui():
                                     ft.Text(f"Resolved IP: {dns_info['Resolved IP']}", size=12),
                                     ft.Text(f"Aliases: {dns_info['Known Aliases']}", size=12),
                                 ]))))
+                                print_cli(f"[+] DNS: {dns_info['Resolved IP']} (aliases: {dns_info['Known Aliases']})", ft.colors.GREEN_ACCENT)
                                 page.update()
 
                                 geo = PassiveEngine.get_ip_geolocation(dns_info["Resolved IP"])
@@ -747,13 +801,97 @@ def run_gui():
                                     results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
                                         ft.Text("IP Geolocation", weight="bold", color=ft.colors.BLUE_200), ft.Text(geo_text, size=12)
                                     ]))))
+                                    print_cli(f"[+] Geo: {geo.get('Country')}, {geo.get('City')} ({geo.get('ISP')})", ft.colors.GREEN_ACCENT)
                                     page.update()
+
+                                # --- Threat Intelligence (Shodan / VirusTotal / AbuseIPDB / Reverse IP) ---
+                                resolved_ip = dns_info["Resolved IP"]
+
+                                shodan = IntelEngine.query_shodan(resolved_ip)
+                                export_data.append({"Shodan": shodan})
+                                if "error" not in shodan:
+                                    has_vulns = bool(shodan["vulnerabilities"])
+                                    shodan_text = (
+                                        f"Organization: {shodan['organization']}\n"
+                                        f"OS: {shodan['os']}\n"
+                                        f"Historical Open Ports: {', '.join(map(str, shodan['ports'])) or 'None'}\n"
+                                        f"Hostnames: {', '.join(shodan['hostnames']) or 'None'}\n"
+                                        f"Known CVEs: {', '.join(shodan['vulnerabilities']) or 'None'}"
+                                    )
+                                    results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                        ft.Text("Shodan Threat Intelligence", weight="bold", color=ft.colors.RED_400 if has_vulns else ft.colors.BLUE_200),
+                                        ft.Text(shodan_text, size=12)
+                                    ]))))
+                                    print_cli(f"[+] Shodan: org={shodan['organization']} os={shodan['os']} CVEs={', '.join(shodan['vulnerabilities']) or 'none'}", ft.colors.RED_400 if has_vulns else ft.colors.GREEN_ACCENT)
+                                else:
+                                    results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                        ft.Text("Shodan Threat Intelligence", weight="bold", color=ft.colors.GREY_400),
+                                        ft.Text(shodan["error"], size=12, color=ft.colors.GREY_400)
+                                    ]))))
+                                    print_cli(f"[-] Shodan: {shodan['error']}", ft.colors.GREY_500)
+                                page.update()
+
+                                verdict_colors = {"MALICIOUS": ft.colors.RED_400, "SUSPICIOUS": ft.colors.ORANGE_400, "CLEAN": ft.colors.GREEN_ACCENT}
+                                for vt_label, vt_target, vt_type in (("IP", resolved_ip, "ip"), ("Domain", target, "domain")):
+                                    vt = IntelEngine.query_virustotal(vt_target, vt_type)
+                                    export_data.append({f"VirusTotal ({vt_label})": vt})
+                                    if "error" not in vt:
+                                        vt_text = f"Verdict: {vt['verdict']}\nMalicious: {vt['malicious_hits']}  Suspicious: {vt['suspicious_hits']}  Harmless: {vt['harmless_hits']}"
+                                        results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                            ft.Text(f"VirusTotal Reputation ({vt_label})", weight="bold", color=verdict_colors.get(vt["verdict"], ft.colors.WHITE)),
+                                            ft.Text(vt_text, size=12)
+                                        ]))))
+                                        print_cli(f"[+] VirusTotal ({vt_label}): {vt['verdict']} ({vt['malicious_hits']} malicious / {vt['suspicious_hits']} suspicious)", verdict_colors.get(vt["verdict"], ft.colors.WHITE))
+                                    else:
+                                        results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                            ft.Text(f"VirusTotal Reputation ({vt_label})", weight="bold", color=ft.colors.GREY_400),
+                                            ft.Text(vt["error"], size=12, color=ft.colors.GREY_400)
+                                        ]))))
+                                        print_cli(f"[-] VirusTotal ({vt_label}): {vt['error']}", ft.colors.GREY_500)
+                                page.update()
+
+                                abuse = IntelEngine.query_abuseipdb(resolved_ip)
+                                export_data.append({"AbuseIPDB": abuse})
+                                if "error" not in abuse:
+                                    score = abuse["abuse_confidence_score"]
+                                    score_color = ft.colors.RED_400 if score > 50 else (ft.colors.ORANGE_400 if score > 0 else ft.colors.GREEN_ACCENT)
+                                    abuse_text = (
+                                        f"Abuse Confidence Score: {score}%\n"
+                                        f"Total Reports: {abuse['total_reports']}\n"
+                                        f"Usage Type: {abuse['usage_type']}\n"
+                                        f"Associated Domain: {abuse['domain']}"
+                                    )
+                                    results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                        ft.Text("AbuseIPDB Reputation", weight="bold", color=score_color), ft.Text(abuse_text, size=12)
+                                    ]))))
+                                    print_cli(f"[+] AbuseIPDB: {score}% confidence, {abuse['total_reports']} report(s)", score_color)
+                                else:
+                                    results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                        ft.Text("AbuseIPDB Reputation", weight="bold", color=ft.colors.GREY_400),
+                                        ft.Text(abuse["error"], size=12, color=ft.colors.GREY_400)
+                                    ]))))
+                                    print_cli(f"[-] AbuseIPDB: {abuse['error']}", ft.colors.GREY_500)
+                                page.update()
+
+                                reverse_ip = IntelEngine.query_hackertarget_reverse_ip(resolved_ip)
+                                export_data.append({"Reverse IP Lookup": reverse_ip})
+                                hosted = reverse_ip.get("hosted_domains") if "error" not in reverse_ip else None
+                                if hosted:
+                                    results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
+                                        ft.Text("Other Domains Hosted on This IP", weight="bold", color=ft.colors.BLUE_200),
+                                        ft.Text("\n".join(hosted[:15]), size=12)
+                                    ]))))
+                                    print_cli(f"[+] Reverse IP: {len(hosted)} other domain(s) on {resolved_ip}", ft.colors.GREEN_ACCENT)
+                                    page.update()
+                            else:
+                                print_cli(f"[-] {dns_info['error']}", ft.colors.RED_400)
 
                             whois = PassiveEngine.get_whois(target)
                             export_data.append({"WHOIS": whois})
                             results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
                                 ft.Text("WHOIS Registry", weight="bold", color=ft.colors.BLUE_200), ft.Text(whois[:300] + "...", size=12)
                             ]))))
+                            print_cli(f"[+] WHOIS: {whois[:150]}...", ft.colors.GREEN_ACCENT)
                             page.update()
 
                             subs = PassiveEngine.get_subdomains(target)
@@ -762,6 +900,7 @@ def run_gui():
                                 results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
                                     ft.Text("Subdomains", weight="bold", color=ft.colors.BLUE_200), ft.Text("\n".join(subs), size=12)
                                 ]))))
+                                print_cli(f"[+] Subdomains: {', '.join(subs[:10])}", ft.colors.GREEN_ACCENT)
                                 page.update()
 
                             headers_audit = WebVulnScanner.analyze_website(target)
@@ -771,6 +910,8 @@ def run_gui():
                                 results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
                                     ft.Text("HTTP Header Security Audit", weight="bold", color=ft.colors.ORANGE_400), ft.Text(audit_text, size=12)
                                 ]))))
+                                for v in headers_audit:
+                                    print_cli(f"  [!] [{v.get('severity')}] {v.get('vulnerability')}", ft.colors.ORANGE_400)
                                 page.update()
 
                             fuzz = WebVulnScanner.fuzz_directories(target)
@@ -780,8 +921,13 @@ def run_gui():
                                 results_list.controls.append(ft.Card(content=ft.Container(padding=15, content=ft.Column([
                                     ft.Text("Fuzzing Hits", weight="bold", color=ft.colors.RED_300), ft.Text(fuzz_text, color=ft.colors.GREEN_ACCENT)
                                 ]))))
+                                for f in fuzz:
+                                    print_cli(f"  [+] Found path: {f['path']} ({f['status']})", ft.colors.GREEN_ACCENT)
+
+                            print_cli("[*] OSINT pipeline complete.", ft.colors.GREEN_ACCENT)
                         except Exception as ex:
                             results_list.controls.append(ft.Text(f"OSINT pipeline error: {ex}", color=ft.colors.RED_400))
+                            print_cli(f"[-] OSINT pipeline error: {ex}", ft.colors.RED_400)
                         finally:
                             page.client_storage.set("passive_data", export_data)
                             progress.visible = False; page.update()
@@ -922,7 +1068,7 @@ def run_gui():
             # VIEW 6: TOOLS & AUDIT LOGS
             # ----------------------------------------------------
             def tools_view():
-                resolve_input = ft.TextField(label="Domain/URL to Resolve", value="google.com", expand=True)
+                resolve_input = ft.TextField(label="Domain/URL to Resolve", value="google.com", width=280)
                 resolve_output = ft.Text("")
 
                 def do_resolve(e):
@@ -937,7 +1083,7 @@ def run_gui():
                         print_cli(f"[-] Failed to resolve {clean}.", ft.colors.RED_400)
                     page.update()
 
-                ip_input = ft.TextField(label="CIDR Network Range (e.g. 192.168.1.0/24)", expand=True)
+                ip_input = ft.TextField(label="CIDR Network Range (e.g. 192.168.1.0/24)", width=320)
                 output_col = ft.Column(spacing=8)
 
                 def calculate(e):
@@ -1102,7 +1248,8 @@ def run_gui():
                 # since only one of them is mounted at a time but the other should resume at the
                 # right tab if the window is resized/rotated across the mobile breakpoint.
                 nav_rail.selected_index = index
-                nav_bar.selected_index = index
+                if nav_bar is not None:
+                    nav_bar.selected_index = index
                 page.update()
 
             NAV_ITEMS = [
@@ -1116,11 +1263,24 @@ def run_gui():
                 destinations=[ft.NavigationRailDestination(icon=icon, label=label) for icon, label in NAV_ITEMS],
                 on_change=navigation_handler,
             )
-            nav_bar = ft.NavigationBar(
-                selected_index=0,
-                destinations=[ft.NavigationBarDestination(icon=icon, label=label) for icon, label in NAV_ITEMS],
-                on_change=navigation_handler,
-            )
+
+            # Flet has renamed this destination class across versions (some ship
+            # NavigationBarDestination, others NavigationDestination). The bottom-nav
+            # mobile layout is treated as fully optional: if neither class exists, or
+            # construction fails for any other reason, nav_bar stays None and the app
+            # simply always uses the desktop NavigationRail layout instead of crashing.
+            nav_bar = None
+            try:
+                _NavBarDest = getattr(ft, "NavigationBarDestination", None) or getattr(ft, "NavigationDestination", None)
+                if _NavBarDest is not None:
+                    nav_bar = ft.NavigationBar(
+                        selected_index=0,
+                        destinations=[_NavBarDest(icon=icon, label=label) for icon, label in NAV_ITEMS],
+                        on_change=navigation_handler,
+                    )
+            except Exception as ex:
+                print(f"[SoloScan] Mobile NavigationBar unavailable on this Flet version ({ex}); desktop layout only.")
+                nav_bar = None
             
             gui_area.content = active_recon_view()
             div1, div2 = ft.VerticalDivider(width=1), ft.VerticalDivider(width=1)
@@ -1153,19 +1313,33 @@ def run_gui():
             content_holder = ft.Container(expand=True)
 
             def apply_responsive_layout(e=None):
-                is_mobile = (page.width or 1350) < MOBILE_BREAKPOINT
-                if is_mobile:
-                    page.navigation_bar = nav_bar
-                    gui_area.expand, cli_area.expand, cli_area.height = True, None, 320
-                    content_holder.content = ft.Column([gui_area, ft.Divider(height=1), cli_area], expand=True)
-                else:
-                    page.navigation_bar = None
-                    cli_area.height = None
-                    gui_area.expand, cli_area.expand = 5, 4
+                is_mobile = nav_bar is not None and (page.width or 1350) < MOBILE_BREAKPOINT
+                try:
+                    if is_mobile:
+                        page.navigation_bar = nav_bar
+                        gui_area.expand, cli_area.expand, cli_area.height = True, None, 320
+                        content_holder.content = ft.Column([gui_area, ft.Divider(height=1), cli_area], expand=True)
+                    else:
+                        page.navigation_bar = None
+                        cli_area.height = None
+                        gui_area.expand, cli_area.expand = 5, 4
+                        content_holder.content = ft.Row([nav_rail, div1, gui_area, div2, cli_area], expand=True)
+                except Exception as ex:
+                    # Final safety net -- always fall back to the known-working desktop layout
+                    # rather than leave the page blank if anything above isn't supported here.
+                    print(f"[SoloScan] Responsive layout error, reverting to desktop layout: {ex}")
+                    try: page.navigation_bar = None
+                    except Exception: pass
                     content_holder.content = ft.Row([nav_rail, div1, gui_area, div2, cli_area], expand=True)
                 page.update()
 
-            page.on_resized = apply_responsive_layout
+            # Flet has also renamed this event across versions (on_resize vs on_resized) --
+            # bind to whichever this installed copy actually supports.
+            _resize_attr = "on_resized" if hasattr(ft.Page, "on_resized") else "on_resize"
+            try:
+                setattr(page, _resize_attr, apply_responsive_layout)
+            except Exception:
+                pass
 
             # Assemble the Final UI
             page.add(

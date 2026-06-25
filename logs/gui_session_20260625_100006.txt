@@ -1,0 +1,129 @@
+[10:00:06] ╔══════════════════════════════════════════════════════════════════╗
+[10:00:06] ║                   SOLOSCAN SECURITY SUITE PRO                    ║
+[10:00:06] ║             Developed by: GarbaTheAnalyst Consultancy            ║
+[10:00:06] ╚══════════════════════════════════════════════════════════════════╝
+[10:00:06] [*] System Time: 2026-06-25 10:00:06
+[10:00:06] [*] OS Kernel: Windows 11
+[10:00:06] [*] Privileges: ELEVATED
+[10:00:06] [*] Environment: Ready for Reconnaissance & Defense
+[10:00:06] --------------------------------------------------------------------
+[10:00:06] Type 'help' for command list.
+[10:00:12] PS> osint example.com
+[10:00:12] [+] DNS: 104.20.23.154 (aliases: None found)
+[10:00:13] [+] Geo: Canada, Toronto (Cloudflare, Inc.)
+[10:00:16] [-] Shodan: No data available on Shodan for this IP.
+[10:00:24] [+] VirusTotal (IP): CLEAN (0 malicious / 0 suspicious)
+[10:00:27] [+] VirusTotal (Domain): CLEAN (0 malicious / 0 suspicious)
+[10:00:31] [+] AbuseIPDB: 0% confidence, 2 report(s)
+[10:00:36] [+] Reverse IP: 114 other domain(s) on 104.20.23.154
+[10:00:43] [+] WHOIS: registrar: {'id': '376', 'name': 'RESERVED-Internet Assigned Numbers Authority', 'email': None, 'url': None, 'phone': None, 'address': None}
+status: [...
+[10:00:48] [+] Subdomains: www.example.com
+[10:00:49]   [!] [Medium] Missing Clickjacking Protection
+[10:00:49]   [!] [Low] Tech Disclosure
+[10:00:59] [*] OSINT pipeline complete.
+[10:01:46] PS> osint coinly.io
+[10:01:47] [+] DNS: 15.197.225.128 (aliases: None found)
+[10:01:48] [+] Geo: Canada, Montreal (Amazon.com, Inc.)
+[10:01:51] [+] Shodan: org=Amazon Technologies Inc. os=None CVEs=none
+[10:01:55] [+] VirusTotal (IP): MALICIOUS (1 malicious / 1 suspicious)
+[10:01:59] [+] VirusTotal (Domain): CLEAN (0 malicious / 0 suspicious)
+[10:02:05] [+] AbuseIPDB: 60% confidence, 46 report(s)
+[10:02:13] [+] Reverse IP: 500 other domain(s) on 15.197.225.128
+[10:02:16] [+] WHOIS: registrar: {'id': '146', 'name': 'GoDaddy.com, LLC', 'email': 'abuse@godaddy.com', 'url': None, 'phone': 'tel:+1.4806242505', 'address': None}
+status:...
+[10:02:19] [+] Subdomains: coinly.io, pay.coinly.io, www.coinly.io
+[10:02:24]   [!] [Low] Tech Disclosure
+[10:02:30] [*] OSINT pipeline complete.
+[10:03:06] PS> osint newgateuniversityminna.edu.ng
+[10:03:06] [+] DNS: 72.61.96.140 (aliases: None found)
+[10:03:07] [+] Geo: France, Paris (Hostinger FR)
+[10:03:09] [-] Shodan: Shodan API error: 401
+[10:03:12] [+] VirusTotal (IP): CLEAN (0 malicious / 0 suspicious)
+[10:03:15] [+] VirusTotal (Domain): CLEAN (0 malicious / 0 suspicious)
+[10:03:18] [+] AbuseIPDB: 0% confidence, 0 report(s)
+[10:03:22] [+] Reverse IP: 7 other domain(s) on 72.61.96.140
+[10:03:25] [+] WHOIS: status: active https://icann.org/epp#active
+registrant: {'owner': [{'handle': '2014024-NIRA', 'type': None, 'name': None, 'organization': None, 'email...
+[10:03:30] [+] Subdomains: admissions.newgateuniversityminna.edu.ng, elearning.newgateuniversityminna.edu.ng, www.elearning.newgateuniversityminna.edu.ng, mynum.newgateuniversityminna.edu.ng, www.student.newgateuniversityminna.edu.ng, www.newgateuniversityminna.edu.ng
+[10:04:38]   [+] Found path: /admin (200)
+[10:04:38]   [+] Found path: /wp-admin/ (200)
+[10:04:38] [*] OSINT pipeline complete.
+[10:11:35] PS> resolve newgateuniversityminna.edu.ng
+[10:11:35] [-] Failed to resolve newgateuniversityminna.edu.ng.
+[10:14:48] PS> resolve newgateuniversityminna.edu.ng
+[10:15:00] [-] Failed to resolve newgateuniversityminna.edu.ng.
+[10:16:11] PS> resolve newgateuniversityminna.edu.ng
+[10:16:11] [-] Failed to resolve newgateuniversityminna.edu.ng.
+[10:20:23] PS> resolve newgateuniversityminna.edu.ng
+[10:20:24] [+] newgateuniversityminna.edu.ng -> 72.61.96.140
+[10:20:54] PS> scan 72.61.96.140 3 ports
+[10:20:54]   [+] 22   /tcp | OPEN     | SSH
+[10:20:54]   [+] 80   /tcp | OPEN     | HTTP
+[10:20:54]   [+] 443  /tcp | OPEN     | HTTPS
+[10:21:05] PS> traceroute 72.61.96.140
+[10:21:07]   Hop 1   -> 10.20.0.1
+[10:21:07]   Hop 2   -> 100.64.0.1
+[10:21:07]   Hop 3   -> 172.16.252.86
+[10:21:07]   Hop 5   -> 206.224.70.102
+[10:21:07]   Hop 7   -> 154.66.247.176
+[10:21:07]   Hop 6   -> 41.173.240.40
+[10:21:07]   Hop 8   -> 41.84.151.59
+[10:21:07]   Hop 14  -> 2.25.25.12
+[10:21:07]   Hop 12  -> 184.105.213.244
+[10:21:47] PS> discover 10.20.0.0/24
+[10:21:51]   [➔] Device Found: IP = 10.20.0.1       | MAC = b2:5b:f4:26:f5:b9
+[10:21:51]   [➔] Device Found: IP = 10.20.0.10      | MAC = 5e:95:9e:91:7c:fa
+[10:21:51]   [➔] Device Found: IP = 10.20.0.83      | MAC = 82:fc:17:bd:1e:76
+[10:21:51]   [➔] Device Found: IP = 10.20.0.86      | MAC = ee:a8:09:5b:32:d4
+[10:21:51]   [➔] Device Found: IP = 10.20.0.108     | MAC = 96:9a:07:e3:6a:4b
+[10:21:51]   [➔] Device Found: IP = 10.20.0.106     | MAC = 66:b3:e8:b2:b1:7e
+[10:21:51]   [➔] Device Found: IP = 10.20.0.126     | MAC = 1a:85:11:70:e0:b7
+[10:21:51]   [➔] Device Found: IP = 10.20.0.133     | MAC = 2e:86:4c:68:a7:1b
+[10:21:51]   [➔] Device Found: IP = 10.20.0.148     | MAC = 74:c1:7d:fd:c9:03
+[10:21:51]   [➔] Device Found: IP = 10.20.0.111     | MAC = de:ba:5a:74:41:ef
+[10:21:51]   [➔] Device Found: IP = 10.20.0.149     | MAC = 82:e4:ba:12:fe:9f
+[10:21:51]   [➔] Device Found: IP = 10.20.0.157     | MAC = c2:ec:ae:70:19:e5
+[10:21:51]   [➔] Device Found: IP = 10.20.0.151     | MAC = 32:fb:a8:55:f0:e2
+[10:21:51]   [➔] Device Found: IP = 10.20.0.154     | MAC = de:db:bc:2c:06:15
+[10:21:51]   [➔] Device Found: IP = 10.20.0.160     | MAC = ee:69:70:a9:23:4d
+[10:21:51]   [➔] Device Found: IP = 10.20.0.118     | MAC = d2:9a:ca:82:54:fc
+[10:21:51]   [➔] Device Found: IP = 10.20.0.167     | MAC = a2:44:2a:b7:2b:ea
+[10:21:51]   [➔] Device Found: IP = 10.20.0.119     | MAC = e6:32:c1:f0:a4:19
+[10:21:51]   [➔] Device Found: IP = 10.20.0.123     | MAC = 26:58:f3:03:ed:cb
+[10:21:51]   [➔] Device Found: IP = 10.20.0.120     | MAC = 2a:d9:36:4a:a6:c4
+[10:21:51]   [➔] Device Found: IP = 10.20.0.45      | MAC = 86:57:93:1b:b4:2f
+[10:21:51]   [➔] Device Found: IP = 10.20.0.153     | MAC = 16:dc:5a:31:25:ad
+[10:21:51]   [➔] Device Found: IP = 10.20.0.122     | MAC = fe:ef:9c:0c:97:3e
+[10:21:51]   [➔] Device Found: IP = 10.20.0.115     | MAC = ba:e8:c2:09:22:ba
+[10:22:55] PS> scan 72.61.96.140 3 ports
+[10:22:56]   [+] 22   /tcp | OPEN     | SSH
+[10:22:59]   [+] 80   /tcp | OPEN     | HTTP
+[10:23:00]   [+] 443  /tcp | FILTERED | HTTPS
+[10:23:28] PS> osint 72.61.96.140
+[10:23:28] [+] DNS: 72.61.96.140 (aliases: None found)
+[10:23:29] [+] Geo: France, Paris (Hostinger FR)
+[10:23:31] [-] Shodan: Shodan API error: 401
+[10:23:36] [+] VirusTotal (IP): CLEAN (0 malicious / 0 suspicious)
+[10:23:43] [-] VirusTotal (Domain): VirusTotal API error: 400
+[10:23:51] [+] AbuseIPDB: 0% confidence, 0 report(s)
+[10:23:56] [+] Reverse IP: 7 other domain(s) on 72.61.96.140
+[10:24:00] [+] WHOIS: {'server': None, 'name': '72.61.96.140', 'idnName': None, 'status': None, 'nameserver': None, 'ips': '72.61.96.140', 'created': None, 'changed': None,...
+[10:24:05] [+] Subdomains: 72.61.96.140
+[10:24:25]   [!] [Low] Tech Disclosure
+[10:25:13]   [+] Found path: /robots.txt (200)
+[10:25:13] [*] OSINT pipeline complete.
+[10:25:44] PS> monitor start 72.61.96.140 --interval 2
+[10:25:50] SIEM ALERT: [10:25:50] ALERT: Port 80 changed from CLOSED -> OPEN
+[10:25:53] SIEM ALERT: [10:25:53] ALERT: Port 3306 changed from CLOSED -> OPEN
+[10:25:57] SIEM ALERT: [10:25:57] ALERT: Port 443 changed from CLOSED -> OPEN
+[10:26:24] PS> sniff start
+[10:26:35] SIEM ALERT: [10:26:35] ALERT: Port 21 changed from CLOSED -> OPEN
+[10:26:37] PS> generate-test-traffic 127.0.0.1 (loopback only, 70 SYN packets)
+[10:26:49] PS> sniff stop
+[10:28:53] PS> resolve newgateuniversityminna.edu.ng
+[10:28:54] [+] newgateuniversityminna.edu.ng -> 72.61.96.140
+[10:29:12] PS> resolve newgateuniversityminna.edu.ng
+[10:29:12] [+] newgateuniversityminna.edu.ng -> 72.61.96.140
+[10:29:30] PS> resolve newgateuniversityminna.edu.ng
+[10:29:31] [+] newgateuniversityminna.edu.ng -> 72.61.96.140
