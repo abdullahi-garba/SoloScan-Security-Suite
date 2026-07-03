@@ -1,0 +1,88 @@
+[10:30:01] ╔══════════════════════════════════════════════════════════════════╗
+[10:30:01] ║                   SOLOSCAN SECURITY SUITE PRO                    ║
+[10:30:01] ║             Developed by: GarbaTheAnalyst Consultancy            ║
+[10:30:01] ╚══════════════════════════════════════════════════════════════════╝
+[10:30:01] [*] System Time: 2026-06-25 10:30:01
+[10:30:01] [*] OS Kernel: Windows 11
+[10:30:01] [*] Privileges: ELEVATED
+[10:30:01] [*] Environment: Ready for Reconnaissance & Defense
+[10:30:01] --------------------------------------------------------------------
+[10:30:01] Type 'help' for command list.
+[10:30:08] PS> resolve google.com
+[10:30:08] [+] google.com -> 142.251.39.174
+[10:30:24] PS> resolve newgateuniversityminna.edu.ng
+[10:30:24] [+] newgateuniversityminna.edu.ng -> 72.61.96.140
+[10:30:44] PS> subnet 72.61.96.140/24
+[10:30:44] [+] Network: 72.61.96.0  Usable Hosts: 254
+[10:30:52] PS> subnet 72.61.96.140/12
+[10:30:53] PS> subnet 72.61.96.140/12
+[10:30:55] [+] Network: 72.48.0.0  Usable Hosts: 1048574
+[10:30:56] [+] Network: 72.48.0.0  Usable Hosts: 1048574
+[10:32:40] PS> scan 72.61.96.140 3 ports
+[10:32:41]   [+] 22   /tcp | OPEN     | SSH
+[10:32:41]   [+] 80   /tcp | OPEN     | HTTP
+[10:32:41]   [+] 443  /tcp | OPEN     | HTTPS
+[10:32:51] PS> scan 72.61.96.140 3 ports
+[10:32:53]   [+] 22   /tcp | OPEN     | SSH
+[10:32:54]   [+] 80   /tcp | OPEN     | HTTP
+[10:32:56]   [+] 443  /tcp | OPEN     | HTTPS
+[10:33:07] PS> monitor start 72.61.96.140 --interval 2
+[10:33:31] PS> osint 72.61.96.140
+[10:33:31] [+] DNS: 72.61.96.140 (aliases: None found)
+[10:33:31] [+] Geo: France, Paris (Hostinger FR)
+[10:33:34] [-] Shodan: Shodan API error: 401
+[10:33:37] [+] VirusTotal (IP): CLEAN (0 malicious / 0 suspicious)
+[10:33:39] [-] VirusTotal (Domain): VirusTotal API error: 400
+[10:33:41] [+] AbuseIPDB: 0% confidence, 0 report(s)
+[10:33:43] [+] Reverse IP: 7 other domain(s) on 72.61.96.140
+[10:33:46] [+] WHOIS: {'server': None, 'name': '72.61.96.140', 'idnName': None, 'status': None, 'nameserver': None, 'ips': '72.61.96.140', 'created': None, 'changed': None,...
+[10:33:48] [+] Subdomains: 72.61.96.140
+[10:33:52]   [!] [Low] Tech Disclosure
+[10:34:40]   [+] Found path: /admin (200)
+[10:34:40]   [+] Found path: /login (200)
+[10:34:40]   [+] Found path: /robots.txt (200)
+[10:34:40]   [+] Found path: /api/ (200)
+[10:34:40]   [+] Found path: /wp-admin/ (200)
+[10:34:40] [*] OSINT pipeline complete.
+[10:35:45] PS> sniff start
+[10:36:43] PS> honeypot start --port 22
+[10:36:43] HONEYPOT: [*] Honeypot Active. Listening on port 22...
+[10:37:57] PS> honeypot stop
+[10:37:58] PS> honeypot start --port 80
+[10:37:58] HONEYPOT: [*] Honeypot Active. Listening on port 80...
+[10:38:03] PS> sniff stop
+[10:38:34] PS> sniff start
+[10:38:38] PS> generate-test-traffic 127.0.0.1 (loopback only, 70 SYN packets)
+[10:39:11] PS> monitor start 72.61.96.140 --interval 2
+[10:39:59] PS> scan 127.0.0.1 3 ports
+[10:39:59] HONEYPOT: [!] INTRUSION DETECTED [10:39:59]: Connection from 127.0.0.1:51598
+[10:40:01]   [+] 22   /tcp | CLOSED   | SSH
+[10:40:01]   [+] 80   /tcp | OPEN     | HTTP
+[10:40:01]   [+] 443  /tcp | CLOSED   | HTTPS
+[10:40:05] PS> sniff stop
+[10:40:09] PS> sniff start
+[10:40:33] PS> scan 127.0.0.1 3 ports
+[10:40:33]   [+] 22   /tcp | CLOSED   | SSH
+[10:40:34]   [+] 80   /tcp | OPEN     | HTTP
+[10:40:35]   [+] 443  /tcp | CLOSED   | HTTPS
+[10:40:39] PS> honeypot stop
+[10:41:06] PS> simulate SYN Flood (Simulated) 10.0.0.5:80 --count 500 (SIMULATED, no real traffic)
+[10:42:16] PS> simulate SYN Flood (Simulated) 72.61.96.140:80 --count 500 (SIMULATED, no real traffic)
+[10:43:20] PS> discover 10.189.59.0/24
+[10:43:38] PS> traceroute 127.0.0.1
+[10:43:38]   Hop 1   -> 127.0.0.1
+[10:43:38]   Hop 2   -> 127.0.0.1
+[10:43:38]   Hop 3   -> 127.0.0.1
+[10:43:38]   Hop 4   -> 127.0.0.1
+[10:43:38]   Hop 5   -> 127.0.0.1
+[10:43:38]   Hop 6   -> 127.0.0.1
+[10:43:38]   Hop 7   -> 127.0.0.1
+[10:43:38]   Hop 8   -> 127.0.0.1
+[10:43:38]   Hop 9   -> 127.0.0.1
+[10:43:38]   Hop 10  -> 127.0.0.1
+[10:43:38]   Hop 11  -> 127.0.0.1
+[10:43:38]   Hop 12  -> 127.0.0.1
+[10:43:38]   Hop 13  -> 127.0.0.1
+[10:43:38]   Hop 14  -> 127.0.0.1
+[10:43:38]   Hop 15  -> 127.0.0.1
+[10:44:18] PS> discover 72.61.96.140/12
