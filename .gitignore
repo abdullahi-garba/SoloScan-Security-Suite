@@ -1,0 +1,15 @@
+# Environments
+.venv/
+env/
+venv/
+
+# Flet / PyInstaller Build folders
+dist/
+build/
+*.spec
+
+# Logs & Secrets
+*.log
+soloscan_debug.log
+core/config.py
+__pycache__/
