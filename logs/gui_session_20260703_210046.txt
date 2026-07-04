@@ -1,0 +1,40 @@
+[21:00:46] ╔══════════════════════════════════════════════════════════════════╗
+[21:00:46] ║                   SOLOSCAN SECURITY SUITE PRO                    ║
+[21:00:46] ║             Developed by: GarbaTheAnalyst Consultancy            ║
+[21:00:46] ╚══════════════════════════════════════════════════════════════════╝
+[21:00:46] [*] System Time: 2026-07-03 21:00:46
+[21:00:46] [*] OS Kernel: Linux 6.17.0-35-generic
+[21:00:46] [*] Privileges: ELEVATED
+[21:00:46] [*] Environment: Ready for Reconnaissance & Defense
+[21:00:46] [*] Session logs: logs/gui_session_20260703_210046.txt (GUI) | logs/cli_session_20260703_210046.txt (CLI)
+[21:00:46] --------------------------------------------------------------------
+[21:00:46] Type 'help' for command list.
+[22:35:23] PS> monitor start 127.0.0.1 --interval 10
+[22:35:32] PS> monitor stop
+[22:35:38] PS> monitor start 127.0.0.1 --interval 1
+[22:36:03] PS> osint coinly.io
+[22:36:09] [+] DNS: 15.197.225.128 (aliases: None found)
+[22:36:10] [+] Geo: Canada, Montreal (Amazon.com, Inc.)
+[22:36:17] [+] Shodan: org=Amazon Technologies Inc. os=None CVEs=none
+[22:36:18] [+] VirusTotal (IP): MALICIOUS (1 malicious / 1 suspicious)
+[22:36:21] [+] VirusTotal (Domain): CLEAN (0 malicious / 0 suspicious)
+[22:36:22] [+] AbuseIPDB: 53% confidence, 46 report(s)
+[22:36:24] [+] Reverse IP: 500 other domain(s) on 15.197.225.128
+[22:36:25] [+] WHOIS: registrar: {'id': '146', 'name': 'GoDaddy.com, LLC', 'email': 'abuse@godaddy.com', 'url': None, 'phone': 'tel:+1.4806242505', 'address': None}
+status:...
+[22:36:29] [+] Subdomains: coinly.io, pay.coinly.io, www.coinly.io
+[22:36:38]   [!] [Low] Tech Disclosure
+[22:36:50] [*] OSINT pipeline complete.
+[23:08:32] [*] Exported Passive PDF to reports/Passive_OSINT_20260703_230832.pdf
+[23:09:15] PS> resolve futminna.edu.ng
+[23:09:15] [+] futminna.edu.ng -> 49.50.80.17
+[23:09:43] PS> monitor stop
+[23:09:45] PS> monitor start  49.50.80.17 --interval 1
+[23:09:53] PS> monitor stop
+[23:10:08] PS> osint  49.50.80.17
+[23:10:08] [-] Could not resolve domain:  49.50.80.17
+[23:10:10] [+] WHOIS: WHOIS error: WhoisJSON returned status 400: {"status":"fail","message":"The domain name parameter is not a valid domain or ip."}...
+[23:10:13] [*] OSINT pipeline complete.
+[23:10:34] PS> honeypot start --port 10
+[23:10:34] HONEYPOT: [*] Honeypot Active. Listening on port 10...
+[23:10:47] PS> scan  49.50.80.17 3 ports

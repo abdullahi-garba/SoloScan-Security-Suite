@@ -1,0 +1,50 @@
+2026-07-03 18:29:36 | INFO | Assets path configured: /home/oem/Desktop/SoloScan-Security-Suite-main/assets
+2026-07-03 18:29:36 | INFO | Starting up UDS server on /tmp/D3ZJDaBLTx
+2026-07-03 18:29:36 | INFO | Flet app has started...
+2026-07-03 18:29:36 | INFO | App URL: /tmp/D3ZJDaBLTx
+2026-07-03 18:29:36 | INFO | Starting Flet View app...
+2026-07-03 18:29:36 | INFO | Extracting Flet from archive to /home/oem/.flet/bin/flet-0.21.2
+2026-07-03 18:35:23 | INFO | Assets path configured: /home/oem/Desktop/SoloScan-Security-Suite-main/assets
+2026-07-03 18:35:23 | INFO | Starting up UDS server on /tmp/rf5huq4h6b
+2026-07-03 18:35:23 | INFO | Flet app has started...
+2026-07-03 18:35:23 | INFO | App URL: /tmp/rf5huq4h6b
+2026-07-03 18:35:23 | INFO | Starting Flet View app...
+2026-07-03 18:35:23 | INFO | Flet View found in: /home/oem/.flet/bin/flet-0.21.2
+2026-07-03 18:35:51 | INFO | Assets path configured: /home/oem/Desktop/SoloScan-Security-Suite-main/assets
+2026-07-03 18:35:51 | INFO | Starting up UDS server on /tmp/p9r4nOHfgv
+2026-07-03 18:35:51 | INFO | Flet app has started...
+2026-07-03 18:35:51 | INFO | App URL: /tmp/p9r4nOHfgv
+2026-07-03 18:35:51 | INFO | Starting Flet View app...
+2026-07-03 18:35:51 | INFO | Flet View found in: /home/oem/.flet/bin/flet-0.21.2
+2026-07-03 18:37:06 | INFO | Assets path configured: /home/oem/Desktop/SoloScan-Security-Suite-main/assets
+2026-07-03 18:37:06 | INFO | Starting up UDS server on /tmp/1mjCUPhZmo
+2026-07-03 18:37:06 | INFO | Flet app has started...
+2026-07-03 18:37:06 | INFO | App URL: /tmp/1mjCUPhZmo
+2026-07-03 18:37:06 | INFO | Starting Flet View app...
+2026-07-03 18:37:06 | INFO | Flet View found in: /home/oem/.flet/bin/flet-0.21.2
+2026-07-03 18:37:07 | INFO | App session started
+2026-07-03 20:59:04 | INFO | Assets path configured: /home/oem/Desktop/SoloScan-Security-Suite-main/assets
+2026-07-03 20:59:04 | INFO | Starting up UDS server on /tmp/wTV2NNd6tT
+2026-07-03 20:59:04 | INFO | Flet app has started...
+2026-07-03 20:59:04 | INFO | App URL: /tmp/wTV2NNd6tT
+2026-07-03 20:59:04 | INFO | Starting Flet View app...
+2026-07-03 20:59:04 | INFO | Extracting Flet from archive to /root/.flet/bin/flet-0.21.2
+2026-07-03 20:59:07 | INFO | App session started
+2026-07-03 21:00:38 | INFO | Assets path configured: /home/oem/Desktop/SoloScan-Security-Suite-main/assets
+2026-07-03 21:00:38 | INFO | Starting up UDS server on /tmp/yAWPuC8Gog
+2026-07-03 21:00:38 | INFO | Flet app has started...
+2026-07-03 21:00:38 | INFO | App URL: /tmp/yAWPuC8Gog
+2026-07-03 21:00:38 | INFO | Starting Flet View app...
+2026-07-03 21:00:38 | INFO | Flet View found in: /root/.flet/bin/flet-0.21.2
+2026-07-03 21:00:39 | INFO | App session started
+2026-07-03 23:09:45 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:09:46 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:09:47 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:09:48 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:09:49 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:09:50 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:09:51 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:09:52 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:10:08 | ERROR | DNS lookup failed for  49.50.80.17: [Errno -5] No address associated with hostname
+2026-07-03 23:10:47 | ERROR | Could not resolve hostname:  49.50.80.17
+2026-07-03 23:10:47 | ERROR | Could not resolve hostname:  49.50.80.17

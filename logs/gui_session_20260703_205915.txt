@@ -1,0 +1,11 @@
+[20:59:15] ╔══════════════════════════════════════════════════════════════════╗
+[20:59:15] ║                   SOLOSCAN SECURITY SUITE PRO                    ║
+[20:59:15] ║             Developed by: GarbaTheAnalyst Consultancy            ║
+[20:59:15] ╚══════════════════════════════════════════════════════════════════╝
+[20:59:15] [*] System Time: 2026-07-03 20:59:15
+[20:59:15] [*] OS Kernel: Linux 6.17.0-35-generic
+[20:59:15] [*] Privileges: ELEVATED
+[20:59:15] [*] Environment: Ready for Reconnaissance & Defense
+[20:59:15] [*] Session logs: logs/gui_session_20260703_205915.txt (GUI) | logs/cli_session_20260703_205915.txt (CLI)
+[20:59:15] --------------------------------------------------------------------
+[20:59:15] Type 'help' for command list.

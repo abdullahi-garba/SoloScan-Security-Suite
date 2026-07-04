@@ -1,0 +1,20 @@
+[21:06:03] PS> help
+[21:06:03] Available commands:
+[21:06:03]   scan <target> [ports] [--stealth]   Port scan. e.g. scan 192.168.1.5 22,80,1-100 --stealth
+[21:06:03]   discover [subnet]                   ARP-sweep a /24 for live hosts (defaults to your local subnet)
+[21:06:03]   traceroute <target>                 Trace the network hops to a target
+[21:06:03]   bruteforce <target> [ftp|http]      Test default credentials against a service (default: ftp)
+[21:06:03]   osint <domain>                      Run the full passive OSINT + threat-intel pipeline
+[21:06:03]   resolve <domain>                    Resolve a domain to an IP address
+[21:06:03]   subnet <CIDR>                       Calculate network/broadcast/usable host range
+[21:06:03]   whoami | ip                         Show this machine's current local IP
+[21:06:03]   privileges                           Show OS and admin/root elevation status
+[21:06:03]   sniff <start|stop>                  Start or stop the IDS packet sniffer
+[21:06:03]   testtraffic [syn|icmp|portscan]     Loopback-only self-test for one IDS detector (default: syn)
+[21:06:03]   fingerprint <target>                Passive TTL-based OS guess
+[21:06:03]   db <hosts|ports|vulns|creds|osint|search <term>|stats|clear>   Query or manage the persisted database
+[21:06:03]   honeypot <start|stop> [port]        Deploy or stop the intrusion-detection honeypot
+[21:06:03]   setip <adapter> <ip> [mask] [gw]    Change a network adapter's static IP (Windows, Admin required)
+[21:06:03]   simulate [target] [port] [count]    SIMULATED ONLY -- prints a fake flood log, sends nothing real
+[21:06:03]   clear                               Clear the terminal output
+[21:06:03]   help [command]                      List all commands, or detailed syntax for one

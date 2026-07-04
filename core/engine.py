@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # Suppress Scapy warning messages in the terminal
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
-from scapy.all import ARP, Ether, srp, IP, TCP, sr1, traceroute
+from scapy.all import ARP, Ether, srp, IP, TCP, ICMP, sr1, send, traceroute
 
 from core.utils import logger, COMMON_SERVICES, check_privileges, COMMON_CREDENTIALS
 
@@ -205,3 +205,102 @@ class ScanEngine:
                 continue # Ignore timeouts and failed auths, try next password
                 
         return {"success": False}
+
+    @staticmethod
+    def fingerprint_os(target):
+        """
+        Lightweight passive OS guess based on the IP TTL of a single ICMP echo
+        reply. Heuristic only -- TTL-based fingerprinting is not exact (NAT,
+        custom sysctl tuning, and route distance can all shift the observed
+        value), but it's the standard low-cost first signal real recon tools
+        use before falling back to more invasive techniques.
+        """
+        os_name, is_admin = check_privileges()
+        if os_name == "android":
+            return {"error": "OS fingerprinting is not supported on this device."}
+        if not is_admin:
+            error_msg = "Run application with Administrator rights." if os_name == "windows" else "Run application using sudo."
+            return {"error": f"Permission Denied. {error_msg}"}
+
+        ip = ScanEngine.resolve_target(target)
+        if not ip:
+            return {"error": f"Could not resolve {target}"}
+
+        try:
+            response = sr1(IP(dst=ip)/ICMP(), timeout=2, verbose=0)
+            if response is None:
+                return {"error": "No ICMP response (host may be down, or blocking ICMP)."}
+
+            ttl = response.ttl
+            if ttl <= 64:
+                guess = "Linux / Unix / macOS"
+            elif ttl <= 128:
+                guess = "Windows"
+            else:
+                guess = "Network device (router/switch) or legacy Unix"
+
+            return {"ip": ip, "ttl": ttl, "os_guess": guess}
+        except Exception as e:
+            return {"error": f"Fingerprint failed: {e}"}
+
+    # ==========================================
+    # IDS SELF-TEST UTILITIES
+    # ==========================================
+    # These three methods exist for ONE purpose: let the user verify their own
+    # SecurityMonitor (sniffer.py) actually fires its SYN-flood / ICMP-flood /
+    # port-scan alerts. Each is hardcoded to 127.0.0.1 -- there is no target
+    # parameter, by design, so this can't be repurposed into a generic
+    # packet-flooding tool against an arbitrary host the way attack.py was.
+
+    @staticmethod
+    def ids_self_test_syn_flood(port=8765, count=60):
+        """Fires `count` real SYN packets at a single loopback port (no response
+        waiting) -- enough to cross SecurityMonitor.SYN_THRESHOLD on its own,
+        without also tripping the port-scan detector (same port every time)."""
+        os_name, is_admin = check_privileges()
+        if os_name == "android":
+            return {"error": "Raw packet sending is not supported on this device."}
+        if not is_admin:
+            error_msg = "Run application with Administrator rights." if os_name == "windows" else "Run application using sudo."
+            return {"error": f"Permission Denied. {error_msg}"}
+        try:
+            send(IP(dst="127.0.0.1")/TCP(dport=port, flags="S"), count=count, verbose=0)
+            return {"sent": count}
+        except Exception as e:
+            return {"error": f"SYN flood self-test failed: {e}"}
+
+    @staticmethod
+    def ids_self_test_icmp_flood(count=110):
+        """Fires `count` real ICMP echo requests at loopback -- enough to cross
+        SecurityMonitor.ICMP_THRESHOLD (100/window)."""
+        os_name, is_admin = check_privileges()
+        if os_name == "android":
+            return {"error": "Raw packet sending is not supported on this device."}
+        if not is_admin:
+            error_msg = "Run application with Administrator rights." if os_name == "windows" else "Run application using sudo."
+            return {"error": f"Permission Denied. {error_msg}"}
+        try:
+            send(IP(dst="127.0.0.1")/ICMP(), count=count, verbose=0)
+            return {"sent": count}
+        except Exception as e:
+            return {"error": f"ICMP flood self-test failed: {e}"}
+
+    @staticmethod
+    def ids_self_test_port_scan(port_count=15):
+        """Fires one SYN each at `port_count` distinct loopback ports -- enough to
+        cross SecurityMonitor.PORT_SCAN_THRESHOLD (10 distinct ports), but well
+        under SYN_THRESHOLD (50), so it tests the port-scan detector in isolation
+        rather than also triggering a SYN-flood alert."""
+        os_name, is_admin = check_privileges()
+        if os_name == "android":
+            return {"error": "Raw packet sending is not supported on this device."}
+        if not is_admin:
+            error_msg = "Run application with Administrator rights." if os_name == "windows" else "Run application using sudo."
+            return {"error": f"Permission Denied. {error_msg}"}
+        try:
+            ports = list(range(30000, 30000 + port_count))
+            for port in ports:
+                send(IP(dst="127.0.0.1")/TCP(dport=port, flags="S"), verbose=0)
+            return {"sent": len(ports)}
+        except Exception as e:
+            return {"error": f"Port-scan self-test failed: {e}"}
