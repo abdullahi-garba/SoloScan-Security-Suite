@@ -785,10 +785,10 @@ def run_gui():
             # --- BOILERPLATE HEADER ---
             def load_boilerplate():
                 is_elevated = "ELEVATED" if check_privileges()[1] else "STANDARD"
-                print_cli("╔══════════════════════════════════════════════════════════════════╗", ft.colors.GREEN_ACCENT)
-                print_cli("║                   SOLOSCAN SECURITY SUITE PRO                    ║", ft.colors.GREEN_ACCENT)
-                print_cli("║             Developed by: GarbaTheAnalyst Consultancy            ║", ft.colors.GREEN_ACCENT)
-                print_cli("╚══════════════════════════════════════════════════════════════════╝", ft.colors.GREEN_ACCENT)
+                print_cli("╔════════════════════════════════════════════════════════════════════╗", ft.colors.GREEN_ACCENT)
+                print_cli("║                   SOLOSCAN SECURITY SUITE PRO                      ║", ft.colors.GREEN_ACCENT)
+                print_cli("║             Developed by: GarbaTheAnalyst Consultancy              ║", ft.colors.GREEN_ACCENT)
+                print_cli("╚════════════════════════════════════════════════════════════════════╝", ft.colors.GREEN_ACCENT)
                 print_cli(f"[*] System Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ft.colors.BLUE_200)
                 print_cli(f"[*] OS Kernel: {platform.system()} {platform.release()}", ft.colors.BLUE_200)
                 print_cli(f"[*] Privileges: {is_elevated}", ft.colors.BLUE_200)

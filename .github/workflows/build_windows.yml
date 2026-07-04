@@ -1,0 +1,29 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch: # This allows you to trigger the build manually from GitHub
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Matches a stable environment
+
+      - name: Install Flet
+        run: pip install flet
+
+      - name: Compile Windows Executable
+        run: flet build windows --project "SoloScan" --org "com.garbatheanalyst"
+
+      - name: Upload Final Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoloScan-Windows-Build
+          path: build/windows/
