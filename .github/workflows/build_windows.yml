@@ -20,6 +20,8 @@ jobs:
         run: pip install flet
 
       - name: Compile Windows Executable
+        env:
+          PYTHONIOENCODING: utf-8
         run: flet build windows --project "SoloScan" --org "com.garbatheanalyst"
 
       - name: Upload Final Artifact
